@@ -86,9 +86,8 @@ Implement a deterministic dry-run engine loop skeleton that can create a simulat
 
 
 ## Acceptance checklist (must check all)
-- [ ] Engine loop runs deterministically in tests
-- [ ] Trade/orders/events/snapshot persisted in DB for a simulated entry
-- [ ] WS stream shows the emitted events
-- [ ] 100% coverage for touched files
-- [ ] todo.md + CHANGELOG updated
-
+- [x] Engine loop runs deterministically in tests
+- [x] Trade/orders/events/snapshot persisted in DB for a simulated entry
+- [x] WS stream shows the emitted events
+- [x] 100% coverage for touched files
+- [x] todo.md + CHANGELOG updated
