@@ -8,6 +8,7 @@ dependencies = [
     "pydantic>=2.0.0",
     "sqlalchemy>=2.0.0",
     "psycopg[binary]>=3.0.0",
+    "redis>=5.0.0",
 ]
 
 [dependency-groups]
@@ -31,5 +32,5 @@ strict = true
 warn_unused_configs = true
 
 [tool.pytest.ini_options]
-addopts = "-q --cov --cov-report=term-missing --cov-fail-under=100"
+addopts = "-q --cov=quantsail_engine --cov-report=term-missing --cov-fail-under=100"
 testpaths = ["tests"]

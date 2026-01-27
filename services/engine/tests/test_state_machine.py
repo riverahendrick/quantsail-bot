@@ -122,23 +122,23 @@ def test_full_trade_lifecycle() -> None:
 
     # IDLE -> EVAL
     sm.transition_to(TradingState.EVAL)
-    assert sm.current_state == TradingState.EVAL
+    assert sm.current_state.value == TradingState.EVAL.value
 
     # EVAL -> ENTRY_PENDING
     sm.transition_to(TradingState.ENTRY_PENDING)
-    assert sm.current_state == TradingState.ENTRY_PENDING
+    assert sm.current_state.value == TradingState.ENTRY_PENDING.value
 
     # ENTRY_PENDING -> IN_POSITION
     sm.transition_to(TradingState.IN_POSITION)
-    assert sm.current_state == TradingState.IN_POSITION
+    assert sm.current_state.value == TradingState.IN_POSITION.value
 
     # IN_POSITION -> EXIT_PENDING
     sm.transition_to(TradingState.EXIT_PENDING)
-    assert sm.current_state == TradingState.EXIT_PENDING
+    assert sm.current_state.value == TradingState.EXIT_PENDING.value
 
     # EXIT_PENDING -> IDLE
     sm.transition_to(TradingState.IDLE)
-    assert sm.current_state == TradingState.IDLE
+    assert sm.current_state.value == TradingState.IDLE.value
 
 
 def test_eval_no_signal_lifecycle() -> None:
@@ -147,11 +147,11 @@ def test_eval_no_signal_lifecycle() -> None:
 
     # IDLE -> EVAL
     sm.transition_to(TradingState.EVAL)
-    assert sm.current_state == TradingState.EVAL
+    assert sm.current_state.value == TradingState.EVAL.value
 
     # EVAL -> IDLE (no entry signal)
     sm.transition_to(TradingState.IDLE)
-    assert sm.current_state == TradingState.IDLE
+    assert sm.current_state.value == TradingState.IDLE.value
 
 
 def test_failed_entry_lifecycle() -> None:
@@ -161,8 +161,8 @@ def test_failed_entry_lifecycle() -> None:
     # IDLE -> EVAL -> ENTRY_PENDING
     sm.transition_to(TradingState.EVAL)
     sm.transition_to(TradingState.ENTRY_PENDING)
-    assert sm.current_state == TradingState.ENTRY_PENDING
+    assert sm.current_state.value == TradingState.ENTRY_PENDING.value
 
     # ENTRY_PENDING -> IDLE (failed entry)
     sm.transition_to(TradingState.IDLE)
-    assert sm.current_state == TradingState.IDLE
+    assert sm.current_state.value == TradingState.IDLE.value

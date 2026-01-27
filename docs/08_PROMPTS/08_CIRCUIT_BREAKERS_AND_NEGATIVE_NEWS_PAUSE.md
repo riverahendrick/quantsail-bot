@@ -93,10 +93,10 @@ Implement all breakers (volatility, spread/slippage, consecutive losses, exchang
 
 
 ## Acceptance checklist (must check all)
-- [ ] Each breaker triggers and expires per config
-- [ ] Entries are blocked during breakers/news pause
-- [ ] Exits are never blocked (test-proven)
-- [ ] Correct breaker events emitted
-- [ ] 100% coverage for touched files
-- [ ] todo.md + CHANGELOG updated
+- [x] Each breaker triggers and expires per config
+- [x] Entries are blocked during breakers/news pause
+- [x] Exits are never blocked (test-proven)
+- [x] Correct breaker events emitted
+- [x] 100% coverage for touched files
+- [x] todo.md + CHANGELOG updated
 

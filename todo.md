@@ -11,15 +11,16 @@
 - [x] Baseline lint/typecheck/test commands working
 
 ### M1 — Data + audit trail
-- [ ] Postgres schema migrated (Alembic)
-- [ ] Event taxonomy implemented end‑to‑end
+- [x] Postgres schema migrated (Alembic)
+- [x] Event taxonomy implemented end‑to‑end
 - [x] WS streaming functional (private)
 
 ### M2 — Trading logic (dry‑run)
 - [x] Strategy outputs + ensemble gating implemented
 - [x] Fee+slippage profitability gate implemented
 - [ ] Risk sizing + exits implemented
-- [ ] Circuit breakers + daily lock implemented
+- [x] Circuit breakers implemented (news pause stubbed for later)
+- [ ] Daily lock implemented
 - [x] Dry‑run trades and equity snapshots persisted
 
 ### M3 — Dashboards
@@ -175,3 +176,85 @@
 - Updated BotConfig to support per-strategy configuration and ensemble settings.
 - Integrated EnsembleSignalProvider into the main engine loop, emitting detailed per-strategy `signal.generated` and aggregate `ensemble.decision` events.
 - Achieved 100% test coverage across all new indicators, strategies, and integration logic.
+
+## Prompt 07 - Profitability gate (fees + slippage + spread)
+- Role: Risk & Engine Engineer
+- [x] Implement fee, slippage, and spread estimators in `gates/estimators.py`
+- [x] Update `BotConfig` with maker/taker fee parameters
+- [x] Upgrade `ProfitabilityGate` to compute detailed breakdown and return rich result
+- [x] Integrate real estimators into `TradingLoop` entry pipeline (before gate check)
+- [x] Add `gate.liquidity.rejected` event for insufficient orderbook depth
+- [x] Update `gate.profitability.passed` / `rejected` events with full payload
+- [x] Add comprehensive tests for estimators and integration scenarios (low liquidity, high fees)
+- [x] Update docs/CHANGELOG.md
+- [x] Add Review section
+
+### Review
+- Implemented `CostEstimator` logic for fees (bps), slippage (orderbook walk), and spread cost.
+- Enhanced `ProfitabilityGate` to provide a full pass/fail breakdown including gross/net profit and all costs.
+- Integrated estimators into `TradingLoop` to calculate real-time `TradePlan` values before entry.
+- Added strict liquidity checks raising `gate.liquidity.rejected` if orderbook depth is insufficient.
+- Added comprehensive integration tests covering liquidity failure, profitability rejection, and max position limits.
+
+## Prompt 08 - Circuit Breakers + Negative News Pause (entries only; exits always allowed)
+- Role: Safety & Risk Engineer
+- [x] Implement BreakerManager with entries_allowed() and exits_allowed() (exits always True)
+- [x] Implement volatility spike trigger (ATR multiple threshold)
+- [x] Implement spread/slippage spike trigger (spread_bps threshold)
+- [x] Implement consecutive losses trigger (losing trade count)
+- [x] Implement exchange instability trigger (MVP stub - always False)
+- [x] Implement breaker expiry logic with configurable pause_minutes
+- [x] Integrate breaker checks into TradingLoop entry pipeline (before opening trades)
+- [x] Emit breaker.triggered and breaker.expired events with full context
+- [x] Add gate.breaker.rejected event when entry blocked
+- [x] Add comprehensive unit tests for all trigger functions
+- [x] Add integration tests proving entries blocked when breakers active
+- [x] Add safety tests proving exits NEVER blocked by breakers
+- [x] Achieve 100% coverage for all breaker modules
+- [x] Update docs/CHANGELOG.md
+- [x] News pause integration with API ingestion and Redis cache
+- [x] Mark checklist complete + add Review section
+
+### Acceptance Checklist
+- [x] Each breaker triggers and expires per config
+- [x] Entries are blocked during breakers/news pause
+- [x] Exits are never blocked (test-proven in test_breaker_exits_safety.py + test_news_pause.py)
+- [x] Correct breaker events emitted (breaker.triggered, breaker.expired, gate.breaker.rejected, gate.news.rejected)
+- [x] 100% coverage for touched files (breaker + cache modules at 100%)
+- [x] todo.md + CHANGELOG updated
+
+### Review
+- Implemented BreakerManager that tracks active breakers with automatic expiry on entries_allowed() calls.
+- Created four circuit breaker trigger functions: volatility spike (ATR multiple), spread/slippage spike (spread_bps), consecutive losses (trade count), and exchange instability (stub).
+- Integrated breaker checks into TradingLoop EVAL state before entry planning; exits always allowed.
+- Added 30 comprehensive tests across 4 test files with 100% coverage for all breaker modules.
+- Emits breaker.triggered (WARN), breaker.expired (INFO), and gate.breaker.rejected (WARN) events with full context.
+- **News Pause**: Implemented full negative news pause integration with POST /v1/news/ingest endpoint (filters negative+high impact only), Redis/in-memory cache, engine integration via BreakerManager.entries_allowed(), and gate.news.rejected event emission. Added 3 API cache tests, 6 API endpoint tests (auth required), 6 engine pause tests, and 3 engine integration tests. Exits never blocked. Enabled via config.breakers.news.enabled (default False).
+
+## Prompt 09 - Daily target lock (STOP/OVERDRIVE) + trailing floor
+- Role: Safety & Risk Engineer
+- [x] Implement realized PnL today calculation (timezone aware) in EngineRepository
+- [x] Update BotConfig with DailyConfig (target_usd, mode, buffer, timezone)
+- [x] Implement DailyLockManager with STOP and OVERDRIVE logic
+- [x] Implement peak PnL reconstruction from trade history
+- [x] Integrate DailyLockManager into TradingLoop entry pipeline
+- [x] Emit daily_lock.engaged, daily_lock.floor_updated, daily_lock.entries_paused events
+- [x] Add unit tests for DailyLockManager (STOP and OVERDRIVE scenarios)
+- [x] Add integration tests for TradingLoop proving entries blocked
+- [x] Achieve 100% coverage for all daily lock modules
+- [x] Update docs/CHANGELOG.md and mark checklist complete
+
+### Acceptance Checklist
+- [x] STOP mode pauses entries after target reached
+- [x] OVERDRIVE updates floor and enforces it (scenario test)
+- [x] Events emitted correctly
+- [x] 100% coverage for touched files
+- [x] todo.md + CHANGELOG updated
+
+### Review
+- Implemented `DailyLockManager` supporting STOP and OVERDRIVE modes with timezone-aware PnL calculation.
+- Added `get_today_realized_pnl` and `get_today_closed_trades` to `EngineRepository`.
+- Implemented peak PnL reconstruction to ensure state persists across restarts (calculates peak from historical equity curve of the day).
+- Integrated into `TradingLoop` to block entries when target/floor conditions are met, emitting `gate.daily_lock.rejected`.
+- Added comprehensive unit and integration tests covering target hit, peak tracking, floor updates, and floor breaches.
+- Achieved 100% test coverage for all new components.

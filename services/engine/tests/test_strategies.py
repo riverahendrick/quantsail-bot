@@ -1,4 +1,4 @@
-"""Unit tests for strategies."""
+"Unit tests for strategies."
 
 from unittest.mock import MagicMock, patch
 
@@ -9,7 +9,6 @@ from quantsail_engine.config.models import (
     StrategiesConfig,
     TrendStrategyConfig,
 )
-from quantsail_engine.models.candle import Candle, Orderbook
 from quantsail_engine.models.signal import SignalType
 from quantsail_engine.strategies.breakout import BreakoutStrategy
 from quantsail_engine.strategies.ensemble import EnsembleCombiner
@@ -65,7 +64,7 @@ def test_mean_reversion_long_signal() -> None:
         candles.append(make_candle(90 - i * 5, 90 - i * 5, 80 - i * 5))
         
     config = BotConfig(strategies=StrategiesConfig(
-        mean_reversion=MeanReversionStrategyConfig(rsi_oversold=90.0) # High threshold to ensure trigger
+        mean_reversion=MeanReversionStrategyConfig(rsi_oversold=90.0)
     ))
     
     output = strat.analyze("BTC/USDT", candles, MagicMock(), config)

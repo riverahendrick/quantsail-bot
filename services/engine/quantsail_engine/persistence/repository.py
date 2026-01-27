@@ -2,6 +2,7 @@
 
 from datetime import datetime, timezone
 from typing import Any
+from zoneinfo import ZoneInfo
 
 from sqlalchemy.orm import Session
 
@@ -194,3 +195,83 @@ class EngineRepository:
         )
         self.session.add(snapshot)
         self.session.commit()
+
+    def get_recent_closed_trades(self, limit: int) -> list[dict[str, Any]]:
+        """
+        Get recent closed trades ordered by closed_at DESC.
+
+        Args:
+            limit: Maximum number of trades to return
+
+        Returns:
+            List of trade dictionaries with id, symbol, pnl_usd, pnl_pct, closed_at
+        """
+        trades = (
+            self.session.query(Trade)
+            .filter(Trade.status == "CLOSED")
+            .order_by(Trade.closed_at.desc())
+            .limit(limit)
+            .all()
+        )
+        return [
+            {
+                "id": trade.id,
+                "symbol": trade.symbol,
+                "pnl_usd": trade.pnl_usd,
+                "pnl_pct": trade.pnl_pct,
+                "closed_at": trade.closed_at,
+            }
+            for trade in trades
+        ]
+
+    def get_today_realized_pnl(self, timezone_str: str = "UTC") -> float:
+        """
+        Calculate realized PnL for the current day in the specified timezone.
+
+        Args:
+            timezone_str: Timezone string (e.g., "UTC", "America/New_York")
+
+        Returns:
+            Sum of pnl_usd for trades closed today
+        """
+        tz = ZoneInfo(timezone_str)
+        now = datetime.now(tz)
+        start_of_day = now.replace(hour=0, minute=0, second=0, microsecond=0)
+        
+        # Convert start_of_day to UTC for DB query if DB stores in UTC (it does)
+        start_of_day_utc = start_of_day.astimezone(timezone.utc)
+
+        closed_trades = (
+            self.session.query(Trade)
+            .filter(
+                Trade.status == "CLOSED",
+                Trade.closed_at >= start_of_day_utc
+            )
+            .all()
+        )
+        return sum(trade.pnl_usd or 0.0 for trade in closed_trades)
+
+    def get_today_closed_trades(self, timezone_str: str = "UTC") -> list[Trade]:
+        """
+        Get all trades closed today in the specified timezone, ordered by closed_at.
+
+        Args:
+            timezone_str: Timezone string
+
+        Returns:
+            List of Trade objects
+        """
+        tz = ZoneInfo(timezone_str)
+        now = datetime.now(tz)
+        start_of_day = now.replace(hour=0, minute=0, second=0, microsecond=0)
+        start_of_day_utc = start_of_day.astimezone(timezone.utc)
+
+        return (
+            self.session.query(Trade)
+            .filter(
+                Trade.status == "CLOSED",
+                Trade.closed_at >= start_of_day_utc
+            )
+            .order_by(Trade.closed_at.asc())
+            .all()
+        )

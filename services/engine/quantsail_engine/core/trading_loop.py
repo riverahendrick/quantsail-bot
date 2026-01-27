@@ -1,22 +1,33 @@
-"""Trading loop orchestrator coordinating all engine components."""
-
 import logging
 import signal
 from typing import Any
 
 from sqlalchemy.orm import Session
 
-logger = logging.getLogger(__name__)
-
+from quantsail_engine.breakers.manager import BreakerManager
+from quantsail_engine.breakers.triggers import (
+    check_consecutive_losses,
+    check_spread_slippage_spike,
+    check_volatility_spike,
+)
 from quantsail_engine.config.models import BotConfig
 from quantsail_engine.core.state_machine import StateMachine, TradingState
 from quantsail_engine.execution.executor import ExecutionEngine
+from quantsail_engine.gates.daily_lock import DailyLockManager
+from quantsail_engine.gates.estimators import (
+    calculate_fee,
+    calculate_slippage,
+    calculate_spread_cost,
+)
 from quantsail_engine.gates.profitability import ProfitabilityGate
+from quantsail_engine.indicators.atr import calculate_atr
 from quantsail_engine.market_data.provider import MarketDataProvider
 from quantsail_engine.models.signal import SignalType
 from quantsail_engine.models.trade_plan import TradePlan
 from quantsail_engine.persistence.repository import EngineRepository
 from quantsail_engine.signals.provider import SignalProvider
+
+logger = logging.getLogger(__name__)
 
 
 class TradingLoop:
@@ -49,6 +60,18 @@ class TradingLoop:
         # Initialize profitability gate
         self.profitability_gate = ProfitabilityGate(
             min_profit_usd=config.execution.min_profit_usd
+        )
+
+        # Initialize breaker manager
+        self.breaker_manager = BreakerManager(
+            config=config.breakers,
+            repo=self.repo
+        )
+        
+        # Initialize daily lock manager
+        self.daily_lock_manager = DailyLockManager(
+            config=config.daily,
+            repo=self.repo
         )
 
         # Initialize per-symbol state machines
@@ -120,6 +143,9 @@ class TradingLoop:
                 )
 
             # Emit ensemble decision event
+            votes = sum(
+                1 for o in signal.strategy_outputs if o.signal == SignalType.ENTER_LONG
+            )
             self.repo.append_event(
                 event_type="ensemble.decision",
                 level="INFO",
@@ -127,7 +153,7 @@ class TradingLoop:
                     "symbol": symbol,
                     "signal_type": signal.signal_type,
                     "confidence": signal.confidence,
-                    "votes": sum(1 for o in signal.strategy_outputs if o.signal == SignalType.ENTER_LONG),
+                    "votes": votes,
                     "total_strategies": len(signal.strategy_outputs),
                 },
                 public_safe=True,
@@ -135,6 +161,36 @@ class TradingLoop:
 
             # Check if we should enter
             if signal.signal_type == SignalType.ENTER_LONG:
+                # Check if entries allowed (fast check for active breakers and news pause)
+                entries_allowed, rejection_reason = self.breaker_manager.entries_allowed()
+                if not entries_allowed:
+                    # Determine event type based on rejection reason
+                    if rejection_reason and "news" in rejection_reason:
+                        event_type = "gate.news.rejected"
+                    else:
+                        event_type = "gate.breaker.rejected"
+
+                    self.repo.append_event(
+                        event_type=event_type,
+                        level="WARN",
+                        payload={"symbol": symbol, "reason": rejection_reason},
+                        public_safe=True,
+                    )
+                    sm.transition_to(TradingState.IDLE)
+                    return
+                
+                # Check daily lock
+                entries_allowed, rejection_reason = self.daily_lock_manager.entries_allowed()
+                if not entries_allowed:
+                    self.repo.append_event(
+                        event_type="gate.daily_lock.rejected",
+                        level="WARN",
+                        payload={"symbol": symbol, "reason": rejection_reason},
+                        public_safe=True,
+                    )
+                    sm.transition_to(TradingState.IDLE)
+                    return
+
                 # Check position limits
                 num_open_positions = len(self.open_trades)
                 if num_open_positions >= self.config.symbols.max_concurrent_positions:
@@ -152,46 +208,108 @@ class TradingLoop:
                     sm.transition_to(TradingState.IDLE)
                     return
 
-                # Create trade plan
-                mid_price = orderbook.mid_price
+                # Calculate Trade Plan with Real Estimators
+                quantity = 0.01  # Fixed for now (Risk sizing in Prompt 08/09?)
+                
+                try:
+                    avg_fill_price, slippage_usd = calculate_slippage(
+                        "BUY", quantity, orderbook
+                    )
+                except ValueError as e:
+                    logger.warning(f"    ❌ Slippage estimation failed: {e}")
+                    self.repo.append_event(
+                        event_type="gate.liquidity.rejected",
+                        level="WARN",
+                        payload={"symbol": symbol, "reason": str(e)},
+                        public_safe=False,
+                    )
+                    sm.transition_to(TradingState.IDLE)
+                    return
+
+                fee_usd = calculate_fee(
+                    avg_fill_price * quantity, self.config.execution.taker_fee_bps
+                )
+                spread_cost_usd = calculate_spread_cost("BUY", quantity, orderbook)
+                
+                # Entry price for plan is usually the estimated average fill price
+                entry_price = avg_fill_price
+                
+                # Simple SL/TP logic (2% / 4% relative to entry)
                 plan = TradePlan(
                     symbol=symbol,
                     side="BUY",
-                    entry_price=mid_price,
-                    quantity=0.01,  # Fixed quantity for dry-run
-                    stop_loss_price=mid_price * 0.98,  # 2% SL
-                    take_profit_price=mid_price * 1.04,  # 4% TP
-                    estimated_fee_usd=1.0,
-                    estimated_slippage_usd=0.5,
-                    estimated_spread_cost_usd=orderbook.spread * 0.01,
+                    entry_price=entry_price,
+                    quantity=quantity,
+                    stop_loss_price=entry_price * 0.98,
+                    take_profit_price=entry_price * 1.04,
+                    estimated_fee_usd=fee_usd,
+                    estimated_slippage_usd=slippage_usd,
+                    estimated_spread_cost_usd=spread_cost_usd,
                 )
 
+                # Check individual breaker triggers AFTER plan creation
+                # Calculate ATR for volatility check
+                atr_values = calculate_atr(candles, period=14)
+
+                # Check volatility spike
+                should_trigger, context = check_volatility_spike(
+                    self.config.breakers.volatility, symbol, candles, atr_values
+                )
+                if should_trigger:
+                    assert context is not None  # Type narrowing
+                    self.breaker_manager.trigger_breaker(
+                        "volatility", "ATR spike detected",
+                        self.config.breakers.volatility.pause_minutes, context
+                    )
+                    sm.transition_to(TradingState.IDLE)
+                    return
+
+                # Check spread/slippage spike
+                should_trigger, context = check_spread_slippage_spike(
+                    self.config.breakers.spread_slippage, symbol, orderbook, plan
+                )
+                if should_trigger:
+                    assert context is not None  # Type narrowing
+                    self.breaker_manager.trigger_breaker(
+                        "spread_slippage", "Spread spike detected",
+                        self.config.breakers.spread_slippage.pause_minutes, context
+                    )
+                    sm.transition_to(TradingState.IDLE)
+                    return
+
+                # Check consecutive losses
+                should_trigger, context = check_consecutive_losses(
+                    self.config.breakers.consecutive_losses, self.repo
+                )
+                if should_trigger:
+                    assert context is not None  # Type narrowing
+                    self.breaker_manager.trigger_breaker(
+                        "consecutive_losses", "Too many consecutive losses",
+                        self.config.breakers.consecutive_losses.pause_minutes, context
+                    )
+                    sm.transition_to(TradingState.IDLE)
+                    return
+
                 # Evaluate profitability gate
-                passed, net_profit = self.profitability_gate.evaluate(plan)
+                passed, breakdown = self.profitability_gate.evaluate(plan)
 
                 if passed:
+                    net_profit = breakdown['net_profit_usd']
                     logger.info(f"    ✅ Profitability gate PASSED (net: ${net_profit:.2f})")
                     self.repo.append_event(
                         event_type="gate.profitability.passed",
                         level="INFO",
-                        payload={
-                            "symbol": symbol,
-                            "expected_net_profit_usd": net_profit,
-                            "min_profit_usd": self.config.execution.min_profit_usd,
-                        },
+                        payload=breakdown,
                         public_safe=False,
                     )
                     sm.transition_to(TradingState.ENTRY_PENDING)
                 else:
+                    net_profit = breakdown['net_profit_usd']
                     logger.info(f"    ❌ Profitability gate REJECTED (net: ${net_profit:.2f})")
                     self.repo.append_event(
                         event_type="gate.profitability.rejected",
                         level="WARN",
-                        payload={
-                            "symbol": symbol,
-                            "expected_net_profit_usd": net_profit,
-                            "min_profit_usd": self.config.execution.min_profit_usd,
-                        },
+                        payload=breakdown,
                         public_safe=False,
                     )
                     sm.transition_to(TradingState.IDLE)
@@ -205,20 +323,45 @@ class TradingLoop:
         # ENTRY_PENDING: Execute entry
         if sm.current_state == TradingState.ENTRY_PENDING:
             # Re-fetch plan (already created above)
+            # In real system, pass plan via State Machine or Context
+            # For now, re-calc quickly or assume it's valid.
+            # To avoid drift, we should ideally carry the plan over.
+            # Note: In a real system, market data changes between ticks/states.
+            
             candles = self.market_data_provider.get_candles(symbol, "5m", 100)
             orderbook = self.market_data_provider.get_orderbook(symbol, 5)
-            mid_price = orderbook.mid_price
+            
+            # ... re-calc logic ... (Simplification: using Mid for Entry in dry-run executor?)
+            # DryRunExecutor in Prompt 05 used Mid Price.
+            # We should pass the `plan` to `execute_entry`?
+            # `execute_entry` currently takes `plan`.
+            
+            # Recalculate plan to pass to executor
+            quantity = 0.01
+            try:
+                avg_fill_price, slippage_usd = calculate_slippage(
+                    "BUY", quantity, orderbook
+                )
+            except ValueError:
+                sm.reset()
+                return
+
+            fee_usd = calculate_fee(
+                avg_fill_price * quantity, self.config.execution.taker_fee_bps
+            )
+            spread_cost_usd = calculate_spread_cost("BUY", quantity, orderbook)
+            entry_price = avg_fill_price
 
             plan = TradePlan(
                 symbol=symbol,
                 side="BUY",
-                entry_price=mid_price,
-                quantity=0.01,
-                stop_loss_price=mid_price * 0.98,
-                take_profit_price=mid_price * 1.04,
-                estimated_fee_usd=1.0,
-                estimated_slippage_usd=0.5,
-                estimated_spread_cost_usd=orderbook.spread * 0.01,
+                entry_price=entry_price,
+                quantity=quantity,
+                stop_loss_price=entry_price * 0.98,
+                take_profit_price=entry_price * 1.04,
+                estimated_fee_usd=fee_usd,
+                estimated_slippage_usd=slippage_usd,
+                estimated_spread_cost_usd=spread_cost_usd,
             )
 
             result = self.execution_engine.execute_entry(plan)

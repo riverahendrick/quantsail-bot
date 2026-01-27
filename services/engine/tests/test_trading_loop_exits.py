@@ -1,10 +1,15 @@
 import signal
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 import pytest
 from sqlalchemy.orm import Session
 
-from quantsail_engine.config.models import BotConfig, ExecutionConfig, RiskConfig, SymbolsConfig
+from quantsail_engine.config.models import (
+    BotConfig,
+    ExecutionConfig,
+    RiskConfig,
+    SymbolsConfig,
+)
 from quantsail_engine.core.state_machine import TradingState
 from quantsail_engine.core.trading_loop import TradingLoop
 from quantsail_engine.execution.executor import ExecutionEngine
@@ -48,16 +53,22 @@ def test_trading_loop_exit_logic(config: BotConfig, mock_deps: dict[str, MagicMo
     # sm.transition_to(TradingState.IN_POSITION)  # Invalid from IDLE
     sm._current_state = TradingState.IN_POSITION  # Force state for testing logic
     loop.open_trades[symbol] = "trade-123"
-    
+
     # Mock market data
     # Mid = 52000, Spread = 10 -> Bid 51995, Ask 52005
     mock_deps["market_data"].get_orderbook.return_value = Orderbook(
         bids=[(51995.0, 1.0)], asks=[(52005.0, 1.0)]
     )
-    
+
     # Mock exit check returning True (TP hit)
     mock_deps["execution"].check_exits.return_value = {
-        "trade": {"id": "trade-123", "exit_price": 52000.0, "pnl_usd": 200.0, "pnl_pct": 0.04, "status": "CLOSED"},
+        "trade": {
+            "id": "trade-123",
+            "exit_price": 52000.0,
+            "pnl_usd": 200.0,
+            "pnl_pct": 0.04,
+            "status": "CLOSED"
+        },
         "exit_order": {
             "id": "order-456",
             "trade_id": "trade-123",
@@ -82,11 +93,11 @@ def test_trading_loop_exit_logic(config: BotConfig, mock_deps: dict[str, MagicMo
     
     # Verify persistence calls
     mock_deps["execution"].check_exits.assert_called()  # Called during transitions
-    # Note: EngineRepository mocks are inside TradingLoop, but we mocked session.
-    # So we can verify session interactions or just trust the logic if coverage hits.
 
 
-def test_trading_loop_missing_trade_id_recovery(config: BotConfig, mock_deps: dict[str, MagicMock]) -> None:
+def test_trading_loop_missing_trade_id_recovery(
+    config: BotConfig, mock_deps: dict[str, MagicMock]
+) -> None:
     loop = TradingLoop(
         config=config,
         session=mock_deps["session"],

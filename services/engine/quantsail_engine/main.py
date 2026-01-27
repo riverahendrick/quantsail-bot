@@ -11,7 +11,6 @@ from quantsail_engine.core.trading_loop import TradingLoop
 from quantsail_engine.execution.dry_run_executor import DryRunExecutor
 from quantsail_engine.market_data.stub_provider import StubMarketDataProvider
 from quantsail_engine.signals.ensemble_provider import EnsembleSignalProvider
-from quantsail_engine.signals.stub_provider import StubSignalProvider
 
 # Try to import real DB models, fall back to stub
 try:
@@ -72,7 +71,10 @@ def main() -> int:
     try:
         max_ticks_env = os.environ.get("MAX_TICKS")
         max_ticks = int(max_ticks_env) if max_ticks_env is not None else 5
-        logger.info(f"▶️  Starting trading loop for symbols: {config.symbols.enabled} (max_ticks={max_ticks})")
+        logger.info(
+            f"▶️  Starting trading loop for symbols: {config.symbols.enabled} "
+            f"(max_ticks={max_ticks})"
+        )
         trading_loop.run(max_ticks=max_ticks)
     except KeyboardInterrupt:
         logger.info("⏸️  Shutdown requested by user")

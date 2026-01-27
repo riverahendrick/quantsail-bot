@@ -27,8 +27,9 @@ class TrendStrategy:
         # We need roughly 2*slow_period for ADX stability or just slow_period for EMA
         # ADX needs 2*period smoothing.
         trend_config = config.strategies.trend
-        required_len = max(trend_config.ema_slow, trend_config.ema_fast, 30) # 30 roughly for ADX default 14
-        
+        # 30 roughly for ADX default 14
+        required_len = max(trend_config.ema_slow, trend_config.ema_fast, 30)
+
         if len(candles) < required_len:
             return StrategyOutput(
                 signal=SignalType.HOLD,

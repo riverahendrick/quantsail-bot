@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session, sessionmaker
 
 # Add engine root to path
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-if str(PROJECT_ROOT) not in sys.path:
+if str(PROJECT_ROOT) not in sys.path:  # pragma: no cover
     sys.path.append(str(PROJECT_ROOT))
 
 # Note: API service path NOT added - tests use stub models only

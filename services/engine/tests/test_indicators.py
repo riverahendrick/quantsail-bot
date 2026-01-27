@@ -3,8 +3,6 @@
 import math
 from datetime import datetime
 
-import pytest
-
 from quantsail_engine.indicators.adx import calculate_adx
 from quantsail_engine.indicators.atr import calculate_atr
 from quantsail_engine.indicators.bollinger import calculate_bollinger_bands

@@ -1,5 +1,7 @@
 """Profitability gate implementation."""
 
+from typing import Any
+
 from quantsail_engine.models.trade_plan import TradePlan
 
 
@@ -15,7 +17,7 @@ class ProfitabilityGate:
         """
         self.min_profit_usd = min_profit_usd
 
-    def evaluate(self, plan: TradePlan) -> tuple[bool, float]:
+    def evaluate(self, plan: TradePlan) -> tuple[bool, dict[str, Any]]:
         """
         Evaluate if trade plan meets profitability requirements.
 
@@ -30,9 +32,13 @@ class ProfitabilityGate:
             plan: Trade plan to evaluate
 
         Returns:
-            Tuple of (passed, expected_net_profit_usd)
+            Tuple of (passed, breakdown_dict)
         """
-        # Use TP target for expected profit calculation
+        # Gross profit: (TP - Entry) * Qty
+        # Note: Entry here should be the "Average Fill Price" if we want accuracy,
+        # but typically TradePlan.entry_price is the trigger price or mid.
+        # Let's assume TradePlan.entry_price is the reference price (e.g. Mid or Best Ask).
+        # Gross Profit is conventionally distance from Entry to TP.
         expected_gross_profit_usd = plan.reward_usd
 
         expected_net_profit_usd = (
@@ -44,4 +50,17 @@ class ProfitabilityGate:
 
         passed = expected_net_profit_usd >= self.min_profit_usd
 
-        return passed, expected_net_profit_usd
+        breakdown = {
+            "entry_price": plan.entry_price,
+            "tp_price": plan.take_profit_price,
+            "quantity": plan.quantity,
+            "gross_profit_usd": expected_gross_profit_usd,
+            "fee_usd": plan.estimated_fee_usd,
+            "slippage_usd": plan.estimated_slippage_usd,
+            "spread_cost_usd": plan.estimated_spread_cost_usd,
+            "net_profit_usd": expected_net_profit_usd,
+            "min_profit_usd": self.min_profit_usd,
+            "passed": passed,
+        }
+
+        return passed, breakdown

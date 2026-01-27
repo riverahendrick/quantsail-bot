@@ -1,14 +1,16 @@
 """Integration tests for Ensemble Signal Provider."""
 
+from datetime import datetime, timedelta
+
 from sqlalchemy.orm import Session
 
-from quantsail_engine.config.models import BotConfig, TrendStrategyConfig, EnsembleConfig, StrategiesConfig
+from quantsail_engine.config.models import BotConfig, EnsembleConfig, StrategiesConfig
 from quantsail_engine.core.trading_loop import TradingLoop
 from quantsail_engine.execution.dry_run_executor import DryRunExecutor
 from quantsail_engine.market_data.stub_provider import StubMarketDataProvider
+from quantsail_engine.models.candle import Candle
 from quantsail_engine.signals.ensemble_provider import EnsembleSignalProvider
-from quantsail_engine.models.candle import Candle, Orderbook
-from datetime import datetime, timedelta
+
 
 def make_trending_candles(start_price: float, count: int) -> list[Candle]:
     candles = []
@@ -25,6 +27,7 @@ def make_trending_candles(start_price: float, count: int) -> list[Candle]:
         ))
     return candles
 
+
 def test_ensemble_integration_events(in_memory_db: Session) -> None:
     """Verify ensemble emits correct events."""
     config = BotConfig()
@@ -40,7 +43,7 @@ def test_ensemble_integration_events(in_memory_db: Session) -> None:
     
     market_data = StubMarketDataProvider(base_price=50000.0)
     # Patch get_candles to return our trending candles
-    market_data.get_candles = lambda s, t, l: candles # type: ignore
+    market_data.get_candles = lambda s, t, limit: candles # type: ignore
     
     signals = EnsembleSignalProvider(config)
     executor = DryRunExecutor()
