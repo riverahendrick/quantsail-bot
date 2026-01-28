@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { getPrivateEvents } from "@/lib/api";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { GlowCard } from "@/components/ui/glow-card";
 import { Button } from "@/components/ui/button";
 import { RefreshCw, List } from "lucide-react";
 import { useTranslations } from "next-intl";
@@ -52,14 +52,14 @@ export default function EventsPage() {
         </Button>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <List className="h-5 w-5" />
+      <GlowCard variant="default">
+        <div className="p-6 border-b border-white/5">
+          <h3 className="text-lg font-semibold text-white flex items-center gap-2">
+            <List className="h-5 w-5 text-cyan-400" />
             {t("systemEventsTitle")}
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
+          </h3>
+        </div>
+        <div className="p-6">
             {error && <div className="p-4 mb-4 text-red-500 border border-red-200 rounded">{error}</div>}
             
             <Table>
@@ -91,9 +91,9 @@ export default function EventsPage() {
                                 </TableCell>
                                 <TableCell>
                                     <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
-                                        event.level === "ERROR" ? "bg-red-100 text-red-800" :
-                                        event.level === "WARN" ? "bg-yellow-100 text-yellow-800" :
-                                        "bg-gray-100 text-gray-800"
+                                        event.level === "ERROR" ? "bg-rose-500/20 text-rose-400 border border-rose-500/30" :
+                                        event.level === "WARN" ? "bg-amber-500/20 text-amber-400 border border-amber-500/30" :
+                                        "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"
                                     }`}>
                                         {event.level}
                                     </span>
@@ -112,8 +112,8 @@ export default function EventsPage() {
                     )}
                 </TableBody>
             </Table>
-        </CardContent>
-      </Card>
+        </div>
+      </GlowCard>
     </div>
   );
 }

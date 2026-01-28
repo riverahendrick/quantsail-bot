@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import {
     stopBot, pauseEntries, resumeEntries, getBotConfig, ConfigVersion
 } from "@/lib/api";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { GlowCard } from "@/components/ui/glow-card";
 import { Button } from "@/components/ui/button";
 import { ShieldAlert, PauseCircle, PlayCircle, StopCircle, Lock } from "lucide-react";
 import { useTranslations } from "next-intl";
@@ -56,15 +56,15 @@ export default function RiskPage() {
 
             <div className="grid gap-6 md:grid-cols-2">
                 {/* Emergency Controls */}
-                <Card className="border-red-200 dark:border-red-900">
-                    <CardHeader>
-                        <CardTitle className="flex items-center gap-2 text-red-600 dark:text-red-400">
+                <GlowCard variant="destructive">
+                    <div className="p-6 border-b border-rose-500/20">
+                        <h3 className="text-lg font-semibold text-rose-400 flex items-center gap-2">
                             <ShieldAlert className="h-5 w-5" />
                             {t("emergencyTitle")}
-                        </CardTitle>
-                        <p className="text-sm text-muted-foreground">{t("emergencyDesc")}</p>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
+                        </h3>
+                        <p className="text-sm text-zinc-400 mt-1">{t("emergencyDesc")}</p>
+                    </div>
+                    <div className="p-6 space-y-4">
                         <Button 
                             variant="destructive" 
                             className="w-full flex items-center justify-center gap-2"
@@ -95,19 +95,19 @@ export default function RiskPage() {
                                 {t("resumeEntries")}
                             </Button>
                         </div>
-                    </CardContent>
-                </Card>
+                    </div>
+                </GlowCard>
 
                 {/* Daily Lock Config View */}
-                <Card>
-                    <CardHeader>
-                        <CardTitle className="flex items-center gap-2">
-                            <Lock className="h-5 w-5" />
+                <GlowCard variant="default">
+                    <div className="p-6 border-b border-white/5">
+                        <h3 className="text-lg font-semibold text-white flex items-center gap-2">
+                            <Lock className="h-5 w-5 text-cyan-400" />
                             {t("dailyLimitsTitle")}
-                        </CardTitle>
-                        <p className="text-sm text-muted-foreground">{t("dailyLimitsDesc")}</p>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
+                        </h3>
+                        <p className="text-sm text-zinc-400 mt-1">{t("dailyLimitsDesc")}</p>
+                    </div>
+                    <div className="p-6 space-y-4">
                         {config ? (
                             <div className="space-y-2 text-sm">
                                 <div className="flex justify-between border-b pb-2">
@@ -126,8 +126,8 @@ export default function RiskPage() {
                         ) : (
                             <div className="text-muted-foreground text-sm">{t("loading")}</div>
                         )}
-                    </CardContent>
-                </Card>
+                    </div>
+                </GlowCard>
             </div>
         </div>
     );

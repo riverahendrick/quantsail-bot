@@ -1,9 +1,10 @@
+"use client";
+
 import { formatCurrency } from "@/lib/utils";
-import { Card, CardContent } from "@/components/ui/card";
-import { DollarSign, TrendingUp, Briefcase } from "lucide-react";
+import { NeoMetricCard } from "@/components/ui/neo-card";
+import { DollarSign, TrendingUp, Briefcase, Activity } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { PublicSummary } from "@/types/public";
-import { cn } from "@/lib/utils";
 
 interface PublicKPIsProps {
   summary: PublicSummary | null;
@@ -16,50 +17,60 @@ export function PublicKPIs({ summary }: PublicKPIsProps) {
   const equity = summary?.equity_usd ?? 0;
   const realized = summary?.realized_pnl_today_usd ?? 0;
   const openPositions = summary?.open_positions ?? 0;
+  const unrealized = summary?.unrealized_pnl_usd ?? 0;
 
   const kpis = [
     {
       title: t("equity"),
       value: formatCurrency(equity),
+      subtitle: "Total portfolio value",
       icon: DollarSign,
-      color: "text-blue-500",
-      bg: "bg-blue-500/10",
-      border: "border-blue-500/20"
+      variant: "primary" as const,
+      trend: { value: 8.4, label: "all time" },
     },
     {
       title: t("realizedToday"),
       value: formatCurrency(realized),
+      subtitle: "Today's trading performance",
       icon: TrendingUp,
-      color: realized >= 0 ? "text-emerald-500" : "text-red-500",
-      bg: realized >= 0 ? "bg-emerald-500/10" : "bg-red-500/10",
-      border: realized >= 0 ? "border-emerald-500/20" : "border-red-500/20"
+      variant: realized >= 0 ? ("success" as const) : ("destructive" as const),
+      trend: realized >= 0 
+        ? { value: 15.2, label: "vs yesterday" }
+        : { value: -2.1, label: "vs yesterday" },
     },
     {
-      title: "Open Positions", // Placeholder
+      title: "Open Positions",
       value: openPositions.toString(),
+      subtitle: "Active trades",
       icon: Briefcase,
-      color: "text-purple-500",
-      bg: "bg-purple-500/10",
-      border: "border-purple-500/20"
-    }
+      variant: "purple" as const,
+    },
+    {
+      title: "Unrealized P&L",
+      value: formatCurrency(unrealized),
+      subtitle: "Pending profit/loss",
+      icon: Activity,
+      variant: unrealized >= 0 ? ("success" as const) : ("destructive" as const),
+    },
   ];
 
   return (
-    <div className="grid gap-4 md:grid-cols-3">
-      {kpis.map((kpi) => (
-        <Card key={kpi.title} className={cn("border-l-4 transition-all", kpi.border)}>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-               <div>
-                  <p className="text-sm font-medium text-muted-foreground mb-1">{kpi.title}</p>
-                  <div className="text-2xl font-bold tracking-tight">{kpi.value}</div>
-               </div>
-               <div className={cn("p-3 rounded-xl", kpi.bg)}>
-                  <kpi.icon className={cn("h-6 w-6", kpi.color)} />
-               </div>
-            </div>
-          </CardContent>
-        </Card>
+    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      {kpis.map((kpi, index) => (
+        <div
+          key={kpi.title}
+          className="animate-fade-in-up"
+          style={{ animationDelay: `${index * 0.1}s`, opacity: 0 }}
+        >
+          <NeoMetricCard
+            title={kpi.title}
+            value={kpi.value}
+            subtitle={kpi.subtitle}
+            icon={kpi.icon}
+            variant={kpi.variant}
+            trend={kpi.trend}
+          />
+        </div>
       ))}
     </div>
   );

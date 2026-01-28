@@ -20,6 +20,7 @@ export interface BotState {
     type: string;
     level: "WARN" | "ERROR";
     expiry?: string;
+    reason?: string;
   }>;
 }
 

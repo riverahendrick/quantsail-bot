@@ -156,10 +156,10 @@ def test_consecutive_losses_trigger() -> None:
     repo = MagicMock()
     now = datetime.now(timezone.utc)
     repo.get_recent_closed_trades.return_value = [
-        {"id": "trade3", "pnl_usd": -10.0, "pnl_pct": -1.0, "closed_at": now},
-        {"id": "trade2", "pnl_usd": -5.0, "pnl_pct": -0.5, "closed_at": now},
-        {"id": "trade1", "pnl_usd": -8.0, "pnl_pct": -0.8, "closed_at": now},
-        {"id": "trade0", "pnl_usd": 20.0, "pnl_pct": 2.0, "closed_at": now},
+        {"id": "trade3", "realized_pnl_usd": -10.0, "pnl_pct": -1.0, "closed_at": now},
+        {"id": "trade2", "realized_pnl_usd": -5.0, "pnl_pct": -0.5, "closed_at": now},
+        {"id": "trade1", "realized_pnl_usd": -8.0, "pnl_pct": -0.8, "closed_at": now},
+        {"id": "trade0", "realized_pnl_usd": 20.0, "pnl_pct": 2.0, "closed_at": now},
     ]
 
     should_trigger, context = check_consecutive_losses(config, repo)
@@ -177,9 +177,9 @@ def test_consecutive_losses_no_trigger() -> None:
     repo = MagicMock()
     now = datetime.now(timezone.utc)
     repo.get_recent_closed_trades.return_value = [
-        {"id": "trade2", "pnl_usd": -10.0, "pnl_pct": -1.0, "closed_at": now},
-        {"id": "trade1", "pnl_usd": -5.0, "pnl_pct": -0.5, "closed_at": now},
-        {"id": "trade0", "pnl_usd": 20.0, "pnl_pct": 2.0, "closed_at": now},
+        {"id": "trade2", "realized_pnl_usd": -10.0, "pnl_pct": -1.0, "closed_at": now},
+        {"id": "trade1", "realized_pnl_usd": -5.0, "pnl_pct": -0.5, "closed_at": now},
+        {"id": "trade0", "realized_pnl_usd": 20.0, "pnl_pct": 2.0, "closed_at": now},
     ]
 
     should_trigger, context = check_consecutive_losses(config, repo)
@@ -194,12 +194,12 @@ def test_consecutive_losses_reset_on_win() -> None:
     repo = MagicMock()
     now = datetime.now(timezone.utc)
     repo.get_recent_closed_trades.return_value = [
-        {"id": "trade4", "pnl_usd": -10.0, "pnl_pct": -1.0, "closed_at": now},
-        {"id": "trade3", "pnl_usd": -5.0, "pnl_pct": -0.5, "closed_at": now},
+        {"id": "trade4", "realized_pnl_usd": -10.0, "pnl_pct": -1.0, "closed_at": now},
+        {"id": "trade3", "realized_pnl_usd": -5.0, "pnl_pct": -0.5, "closed_at": now},
         # Win stops count
-        {"id": "trade2", "pnl_usd": 15.0, "pnl_pct": 1.5, "closed_at": now},
-        {"id": "trade1", "pnl_usd": -8.0, "pnl_pct": -0.8, "closed_at": now},
-        {"id": "trade0", "pnl_usd": -12.0, "pnl_pct": -1.2, "closed_at": now},
+        {"id": "trade2", "realized_pnl_usd": 15.0, "pnl_pct": 1.5, "closed_at": now},
+        {"id": "trade1", "realized_pnl_usd": -8.0, "pnl_pct": -0.8, "closed_at": now},
+        {"id": "trade0", "realized_pnl_usd": -12.0, "pnl_pct": -1.2, "closed_at": now},
     ]
 
     should_trigger, context = check_consecutive_losses(config, repo)
@@ -237,10 +237,10 @@ def test_consecutive_losses_zero_pnl() -> None:
     repo = MagicMock()
     now = datetime.now(timezone.utc)
     repo.get_recent_closed_trades.return_value = [
-        {"id": "trade2", "pnl_usd": -10.0, "pnl_pct": -1.0, "closed_at": now},
+        {"id": "trade2", "realized_pnl_usd": -10.0, "pnl_pct": -1.0, "closed_at": now},
         # Breakeven stops count
-        {"id": "trade1", "pnl_usd": 0.0, "pnl_pct": 0.0, "closed_at": now},
-        {"id": "trade0", "pnl_usd": -5.0, "pnl_pct": -0.5, "closed_at": now},
+        {"id": "trade1", "realized_pnl_usd": 0.0, "pnl_pct": 0.0, "closed_at": now},
+        {"id": "trade0", "realized_pnl_usd": -5.0, "pnl_pct": -0.5, "closed_at": now},
     ]
 
     should_trigger, context = check_consecutive_losses(config, repo)

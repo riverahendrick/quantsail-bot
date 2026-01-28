@@ -1,6 +1,7 @@
 # Changelog — Quantsail
 
 ## Unreleased
+- 2026-01-28: **Complete Dashboard Redesign - Modern Trading Terminal Aesthetic**: Complete overhaul of both public and private dashboards with a modern, polished trading terminal design. Created new `NeoCard` component system with enhanced glassmorphism, neon accent colors, gradient borders, and micro-interactions. Redesigned all public pages (Overview, Trades, Transparency) with professional crypto-dashboard aesthetics. Enhanced EquityChart with improved glow effects under the line, shimmer animations, and better gradients. Updated all private dashboard widgets (StatusBanner, KPIGrid, DailyLockWidget, BreakersWidget, RecentTrades) to use the new design system. Added new animations (fade-in, scale-in, slide-in) and improved hover states throughout.
 - 2026-01-28: **Database URL Driver**: Switched env templates to `postgresql+psycopg://` to match psycopg3 dependency for Alembic/SQLAlchemy.
 - 2026-01-28: **External Service Env Coverage**: Added CryptoPanic and Alpha Vantage placeholders to env templates/local envs and documented key acquisition guidance.
 - 2026-01-28: **Engine Test Stabilization**: Added missing risk fields to dry-run trades, expanded stub models for stop/TP, improved LiveExecutor idempotency/reconcile paths, and added adapter/exit coverage to restore 100% engine test coverage.

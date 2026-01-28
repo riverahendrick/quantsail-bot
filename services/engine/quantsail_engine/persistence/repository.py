@@ -14,7 +14,7 @@ from quantsail_engine.security.encryption import DecryptedCredentials, Encryptio
 # Try to import from API service, fall back to stub models
 try:
     from app.db.models import EquitySnapshot, Event, ExchangeKey, Order, Trade  # type: ignore[import-not-found]
-except ModuleNotFoundError:
+except ModuleNotFoundError:  # pragma: no cover
     from quantsail_engine.persistence.stub_models import (
         EquitySnapshot,
         Event,
@@ -195,6 +195,7 @@ class EngineRepository:
         )
         self.session.add(event)
         self.session.commit()
+        self.session.refresh(event)
         seq: int = event.seq
         return seq
 

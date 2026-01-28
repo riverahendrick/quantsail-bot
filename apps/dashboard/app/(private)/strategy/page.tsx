@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { getBotConfig, createConfigVersion, activateConfig, ConfigVersion } from "@/lib/api";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { GlowCard } from "@/components/ui/glow-card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
@@ -84,12 +84,12 @@ export default function StrategyPage() {
 
       <div className="grid gap-6 lg:grid-cols-3">
         {/* Status Card */}
-        <Card className="lg:col-span-1 h-fit">
-          <CardHeader>
-            <CardTitle>{t("activeVersionTitle")}</CardTitle>
-            <p className="text-sm text-muted-foreground">{t("activeVersionDesc")}</p>
-          </CardHeader>
-          <CardContent className="space-y-4">
+        <GlowCard variant="default" className="lg:col-span-1 h-fit">
+          <div className="p-6 border-b border-white/5">
+            <h3 className="text-lg font-semibold text-white">{t("activeVersionTitle")}</h3>
+            <p className="text-sm text-zinc-400 mt-1">{t("activeVersionDesc")}</p>
+          </div>
+          <div className="p-6 space-y-4">
             {config ? (
               <>
                 <div className="flex justify-between items-center border-b pb-2">
@@ -118,7 +118,7 @@ export default function StrategyPage() {
               <div className="text-muted-foreground text-sm">{t("noActiveConfig")}</div>
             )}
             
-            <div className="bg-yellow-500/10 p-3 rounded-md border border-yellow-500/20">
+            <div className="bg-amber-500/10 p-3 rounded-lg border border-amber-500/20">
                <div className="flex items-start gap-2">
                  <AlertTriangle className="h-4 w-4 text-yellow-500 mt-0.5" />
                  <p className="text-xs text-yellow-600 dark:text-yellow-400">
@@ -126,16 +126,16 @@ export default function StrategyPage() {
                  </p>
                </div>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </GlowCard>
 
         {/* Editor */}
-        <Card className="lg:col-span-2">
-          <CardHeader>
-            <CardTitle>{t("editorTitle")}</CardTitle>
-            <p className="text-sm text-muted-foreground">{t("editorDesc")}</p>
-          </CardHeader>
-          <CardContent className="space-y-4">
+        <GlowCard variant="default" className="lg:col-span-2">
+          <div className="p-6 border-b border-white/5">
+            <h3 className="text-lg font-semibold text-white">{t("editorTitle")}</h3>
+            <p className="text-sm text-zinc-400 mt-1">{t("editorDesc")}</p>
+          </div>
+          <div className="p-6 space-y-4">
             <div className="space-y-2">
               <Label htmlFor="json-editor">{t("configJsonLabel")}</Label>
               <Textarea
@@ -172,8 +172,8 @@ export default function StrategyPage() {
                 </>
               )}
             </Button>
-          </CardContent>
-        </Card>
+          </div>
+        </GlowCard>
       </div>
     </div>
   );

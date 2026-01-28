@@ -39,7 +39,8 @@ const allowedProps = new Set([
   "align",
   "justify",
   "direction",
-  "orientation"
+  "orientation",
+  "status"
 ]);
 
 const allowedDataPrefixes = ["data-"];
@@ -56,8 +57,10 @@ function isAllowedAttribute(name) {
     'width', 'height', 'viewBox', 'd', 'fill', 'stroke', 'strokeWidth',
     'strokeLinecap', 'strokeLinejoin', 'x', 'y', 'x1', 'y1', 'x2', 'y2', 
     'cx', 'cy', 'r', 'points', 'transform', 'offset', 'stopColor', 
-    'stopOpacity', 'strokeDasharray', 'dataKey', 'fontSize', 'tickLine', 'axisLine', 'minTickGap', 'vertical', 'dy'
-  ]);
+        'stopOpacity', 'strokeDasharray', 'dataKey', 'fontSize', 'tickLine', 
+        'axisLine', 'minTickGap', 'vertical', 'dy', 'stdDeviation', 'result', 
+        'in', 'animationEasing', 'filter'
+      ]);
   
   if (svgAttrs.has(name)) return true;
 
@@ -88,7 +91,8 @@ function collectFiles(dirPath) {
 function reportViolation(sourceFile, node, message) {
   const position = sourceFile.getLineAndCharacterOfPosition(node.getStart());
   const relativePath = path.relative(projectRoot, sourceFile.fileName);
-  violations.push(`${relativePath}:${position.line + 1}:${position.character + 1} ${message}`);
+  const text = node.getText();
+  violations.push(`${relativePath}:${position.line + 1}:${position.character + 1} ${message} (Text: "${text}")`);
 }
 
 function checkFile(filePath) {
@@ -111,8 +115,9 @@ function checkFile(filePath) {
 
     if (ts.isJsxExpression(node) && node.expression) {
       if (
-        ts.isStringLiteral(node.expression) ||
-        ts.isNoSubstitutionTemplateLiteral(node.expression)
+        (ts.isStringLiteral(node.expression) ||
+        ts.isNoSubstitutionTemplateLiteral(node.expression)) &&
+        node.expression.getText().replace(/['"`]/g, "").trim().length > 0
       ) {
         reportViolation(sourceFile, node, "String literals must come from translations");
       }

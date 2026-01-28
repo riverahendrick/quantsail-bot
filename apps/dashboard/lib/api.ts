@@ -1,6 +1,18 @@
 import { auth } from "./firebase";
 import { DASHBOARD_CONFIG } from "./config";
 
+// Mock data responses for development (only used when explicitly enabled)
+function getMockResponse<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
+  // Return empty responses - no mock data
+  const mocks: Record<string, unknown> = {
+    "/v1/users": [],
+    "/v1/events": [],
+    "/v1/exchanges/binance/keys/status": { keys: [] }
+  };
+
+  return Promise.resolve((mocks[endpoint] || {}) as T);
+}
+
 async function getHeaders() {
   const user = auth.currentUser;
   const headers: HeadersInit = { "Content-Type": "application/json" };
@@ -12,10 +24,10 @@ async function getHeaders() {
 }
 
 export async function fetchPrivate<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
-  // If Mock Data is forced true and we are in early dev, maybe return mocks?
-  // GLOBAL_RULES says "Never use mock data" except behind toggle.
-  // We assume the caller handles the toggle logic or we pass it through.
-  // Ideally, the backend is running.
+  // If Mock Data is enabled, return mock responses
+  if (DASHBOARD_CONFIG.USE_MOCK_DATA) {
+    return getMockResponse<T>(endpoint, options);
+  }
   
   const headers = await getHeaders();
   const url = `${DASHBOARD_CONFIG.API_URL}${endpoint}`;

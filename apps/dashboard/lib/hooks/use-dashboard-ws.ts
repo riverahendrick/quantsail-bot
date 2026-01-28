@@ -11,6 +11,15 @@ export function useDashboardWs() {
   useEffect(() => {
     let isMounted = true;
 
+    // Skip WebSocket connection in mock mode
+    if (DASHBOARD_CONFIG.USE_MOCK_DATA) {
+      // In mock mode, set disconnected state
+      if (isMounted) {
+        setConnected(false);
+      }
+      return;
+    }
+
     const connect = async () => {
       try {
         const user = auth.currentUser;

@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { getKeys, addKey, revokeKey, updateKey, activateKey, ExchangeKey } from "@/lib/api";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { GlowCard } from "@/components/ui/glow-card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -151,14 +151,14 @@ export default function ExchangePage() {
 
       <div className="grid gap-6 md:grid-cols-2">
         {/* Add Key Form */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Plus className="h-5 w-5" />
+        <GlowCard variant="default">
+          <div className="p-6 border-b border-white/5">
+            <h3 className="text-lg font-semibold text-white flex items-center gap-2">
+              <Plus className="h-5 w-5 text-cyan-400" />
               {t("addKeyTitle")}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
+            </h3>
+          </div>
+          <div className="p-6">
             <form onSubmit={handleAddKey} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="label">{t("labelLabel")}</Label>
@@ -197,18 +197,18 @@ export default function ExchangePage() {
                 {submitting ? t("savingButton") : t("saveButton")}
               </Button>
             </form>
-          </CardContent>
-        </Card>
+          </div>
+        </GlowCard>
 
         {/* Existing Keys List */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Key className="h-5 w-5" />
+        <GlowCard variant="default">
+          <div className="p-6 border-b border-white/5">
+            <h3 className="text-lg font-semibold text-white flex items-center gap-2">
+              <Key className="h-5 w-5 text-violet-400" />
               {t("activeKeysTitle")}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
+            </h3>
+          </div>
+          <div className="p-6">
             {keys.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">
                 {t("noKeys")}
@@ -256,7 +256,7 @@ export default function ExchangePage() {
                   </div>
                 ))}
                 {editingKeyId && (
-                  <div className="p-4 border rounded-lg bg-card/70 space-y-4">
+                  <div className="p-4 rounded-xl bg-white/[0.05] border border-white/10 space-y-4">
                     <div className="space-y-2">
                       <Label htmlFor="edit-label">{t("editLabel")}</Label>
                       <Input
@@ -301,8 +301,8 @@ export default function ExchangePage() {
                 )}
               </div>
             )}
-          </CardContent>
-        </Card>
+          </div>
+        </GlowCard>
       </div>
     </div>
   );

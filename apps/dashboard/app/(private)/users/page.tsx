@@ -8,7 +8,7 @@ import {
   ManagedUser,
   UserRole,
 } from "@/lib/api";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { GlowCard } from "@/components/ui/glow-card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -200,15 +200,15 @@ export default function UsersPage() {
       )}
 
       <div className="grid gap-6 lg:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <UserPlus className="h-5 w-5" />
+        <GlowCard variant="default">
+          <div className="p-6 border-b border-white/5">
+            <h3 className="text-lg font-semibold text-white flex items-center gap-2">
+              <UserPlus className="h-5 w-5 text-emerald-400" />
               {t("createTitle")}
-            </CardTitle>
-            <p className="text-sm text-muted-foreground">{t("createDescription")}</p>
-          </CardHeader>
-          <CardContent>
+            </h3>
+            <p className="text-sm text-zinc-400 mt-1">{t("createDescription")}</p>
+          </div>
+          <div className="p-6">
             <form onSubmit={handleCreateUser} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="user-email">{t("emailLabel")}</Label>
@@ -249,18 +249,18 @@ export default function UsersPage() {
                 {creating ? t("creatingButton") : t("createButton")}
               </Button>
             </form>
-          </CardContent>
-        </Card>
+          </div>
+        </GlowCard>
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Users className="h-5 w-5" />
+        <GlowCard variant="default">
+          <div className="p-6 border-b border-white/5">
+            <h3 className="text-lg font-semibold text-white flex items-center gap-2">
+              <Users className="h-5 w-5 text-violet-400" />
               {t("listTitle")}
-            </CardTitle>
-            <p className="text-sm text-muted-foreground">{t("listDescription")}</p>
-          </CardHeader>
-          <CardContent>
+            </h3>
+            <p className="text-sm text-zinc-400 mt-1">{t("listDescription")}</p>
+          </div>
+          <div className="p-6">
             {loading ? (
               <div className="text-sm text-muted-foreground">{t("loading")}</div>
             ) : loadError ? (
@@ -350,8 +350,8 @@ export default function UsersPage() {
                 </TableBody>
               </Table>
             )}
-          </CardContent>
-        </Card>
+          </div>
+        </GlowCard>
       </div>
     </div>
   );

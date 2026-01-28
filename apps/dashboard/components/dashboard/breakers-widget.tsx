@@ -1,46 +1,105 @@
+"use client";
+
 import { useDashboardStore } from "@/lib/store";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { NeoCard } from "@/components/ui/neo-card";
 import { useTranslations } from "next-intl";
-import { AlertOctagon, CheckCircle2 } from "lucide-react";
+import { AlertOctagon, CheckCircle2, Shield, Clock } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
+import { cn } from "@/lib/utils";
 
 export function BreakersWidget() {
   const { botState } = useDashboardStore();
   const t = useTranslations("Dashboard");
   const breakers = botState.active_breakers;
 
+  const hasBreakers = breakers.length > 0;
+
   return (
-    <Card className="col-span-1 md:col-span-2">
-      <CardHeader className="flex flex-row items-center justify-between pb-2">
-        <CardTitle className="text-base font-medium">{t("activeBreakers")}</CardTitle>
-        {breakers.length > 0 ? (
-          <AlertOctagon className="h-4 w-4 text-red-500" />
-        ) : (
-          <CheckCircle2 className="h-4 w-4 text-green-500" />
-        )}
-      </CardHeader>
-      <CardContent>
+    <NeoCard variant={hasBreakers ? "destructive" : "success"}>
+      <div className="p-6">
+        {/* Header */}
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-3">
+            <div className={cn(
+              "p-2.5 rounded-xl",
+              hasBreakers ? "bg-rose-500/20" : "bg-emerald-500/20"
+            )}>
+              <Shield className={cn(
+                "w-5 h-5",
+                hasBreakers ? "text-rose-400" : "text-emerald-400"
+              )} />
+            </div>
+            <div>
+              <h3 className="text-lg font-semibold text-white">{t("activeBreakers")}</h3>
+              <p className="text-sm text-zinc-500">{t("circuitProtection")}</p>
+            </div>
+          </div>
+          
+          {hasBreakers ? (
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-rose-500/20 border border-rose-500/30">
+              <AlertOctagon className="w-4 h-4 text-rose-400" />
+              <span className="text-xs font-bold text-rose-400">{breakers.length}</span>
+            </div>
+          ) : (
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-500/20 border border-emerald-500/30">
+              <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+              <span className="text-xs font-bold text-emerald-400">{t("ok")}</span>
+            </div>
+          )}
+        </div>
+
+        {/* Content */}
         {breakers.length === 0 ? (
-          <div className="flex h-20 items-center justify-center text-sm text-muted-foreground">
-            {t("noActiveBreakers")}
+          <div className="flex flex-col items-center justify-center py-8 text-center">
+            <div className="w-16 h-16 rounded-full bg-emerald-500/10 flex items-center justify-center mb-3">
+              <CheckCircle2 className="w-8 h-8 text-emerald-400" />
+            </div>
+            <p className="text-zinc-400 font-medium">{t("noActiveBreakers")}</p>
+            <p className="text-xs text-zinc-600 mt-1">{t("allSystemsOperational")}</p>
           </div>
         ) : (
-          <ul className="space-y-3">
+          <div className="space-y-3">
             {breakers.map((breaker, idx) => (
-              <li key={idx} className="flex items-center justify-between rounded-md border p-2 text-sm">
-                <span className="font-medium text-red-600 dark:text-red-400">
-                  {breaker.type}
-                </span>
-                {breaker.expiry && (
-                  <span className="text-muted-foreground">
-                    {t("expiresIn")} {formatDistanceToNow(new Date(breaker.expiry))}
-                  </span>
+              <div
+                key={idx}
+                className={cn(
+                  "p-4 rounded-xl",
+                  "bg-rose-500/10 border border-rose-500/20",
+                  "animate-fade-in-up"
                 )}
-              </li>
+                style={{ animationDelay: `${idx * 0.1}s`, opacity: 0 }}
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 rounded-lg bg-rose-500/20">
+                      <AlertOctagon className="w-4 h-4 text-rose-400" />
+                    </div>
+                    <div>
+                      <p className="font-medium text-rose-400">
+                        {breaker.type}
+                      </p>
+                      {breaker.expiry && (
+                        <p className="text-xs text-rose-300/70 mt-0.5">
+                          {t("expiresIn")} {formatDistanceToNow(new Date(breaker.expiry))}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                  
+                  {breaker.expiry && (
+                    <div className="flex items-center gap-1.5 text-xs text-zinc-500 shrink-0">
+                      <Clock className="w-3 h-3" />
+                      <span>
+                        {formatDistanceToNow(new Date(breaker.expiry))}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </div>
             ))}
-          </ul>
+          </div>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </NeoCard>
   );
 }

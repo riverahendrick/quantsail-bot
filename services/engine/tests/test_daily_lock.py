@@ -121,11 +121,13 @@ def test_reconstruct_peak_from_trades(repo):
     
     # Mock closed trades
     t1 = MagicMock()
-    t1.pnl_usd = 50.0
+    t1.realized_pnl_usd = 50.0
+    
     t2 = MagicMock()
-    t2.pnl_usd = 80.0 # Cumulative 130
+    t2.realized_pnl_usd = 80.0 # Cumulative 130
+    
     t3 = MagicMock()
-    t3.pnl_usd = -20.0 # Cumulative 110
+    t3.realized_pnl_usd = -20.0 # Cumulative 110
     
     repo.closed_trades = [t1, t2, t3]
     repo.pnl = 110.0
