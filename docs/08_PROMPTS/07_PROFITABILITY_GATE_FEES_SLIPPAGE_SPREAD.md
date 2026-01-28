@@ -97,9 +97,8 @@ Implement a fee+slippage+spread profitability estimator and gate. Reject entries
 
 
 ## Acceptance checklist (must check all)
-- [ ] Gate rejects trades below min_profit_usd after costs
-- [ ] Pass/reject events include complete breakdown
-- [ ] Insufficient orderbook depth behavior is defined and tested
-- [ ] 100% coverage for touched files
-- [ ] todo.md + CHANGELOG updated
-
+- [x] Gate rejects trades below min_profit_usd after costs
+- [x] Pass/reject events include complete breakdown
+- [x] Insufficient orderbook depth behavior is defined and tested
+- [x] 100% coverage for touched files
+- [x] todo.md + CHANGELOG updated

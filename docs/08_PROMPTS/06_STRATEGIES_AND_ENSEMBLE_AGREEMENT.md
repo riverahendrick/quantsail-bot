@@ -53,7 +53,6 @@ Implement the 3 strategies with the standard output schema and an ensemble combi
 ## Files you must update before marking complete
 - todo.md
 - docs/CHANGELOG.md
-- (optional) docs/13_ENGINE_SPEC.md if updated
 
 ## Deliverables (must exist at end)
 - Strategy modules: trend, mean_reversion, breakout.
@@ -95,10 +94,9 @@ Implement the 3 strategies with the standard output schema and an ensemble combi
 
 
 ## Acceptance checklist (must check all)
-- [ ] Each strategy is deterministic and unit-tested
-- [ ] StrategyOutput schema matches docs and includes rationale numbers
-- [ ] Ensemble respects min_agreement and confidence_threshold
-- [ ] Correct events emitted for strategies and ensemble
-- [ ] 100% coverage for touched files
-- [ ] todo.md + CHANGELOG updated
-
+- [x] Each strategy is deterministic and unit-tested
+- [x] StrategyOutput schema matches docs and includes rationale numbers
+- [x] Ensemble respects min_agreement and confidence_threshold
+- [x] Correct events emitted for strategies and ensemble
+- [x] 100% coverage for touched files
+- [x] todo.md + CHANGELOG updated

@@ -1,5 +1,7 @@
 """Unit tests for Profitability Gate."""
 
+import pytest
+from datetime import datetime, timezone
 from quantsail_engine.gates.profitability import ProfitabilityGate
 from quantsail_engine.models.trade_plan import TradePlan
 
@@ -21,6 +23,8 @@ def test_profitability_gate_pass() -> None:
         estimated_fee_usd=1.0,
         estimated_slippage_usd=0.5,
         estimated_spread_cost_usd=0.5,
+        trade_id="test-1",
+        timestamp=datetime.now(timezone.utc),
     )
     
     passed, breakdown = gate.evaluate(plan)
@@ -44,6 +48,8 @@ def test_profitability_gate_fail() -> None:
         estimated_fee_usd=1.0,
         estimated_slippage_usd=0.5,
         estimated_spread_cost_usd=0.5,
+        trade_id="test-2",
+        timestamp=datetime.now(timezone.utc),
     )
     
     passed, breakdown = gate.evaluate(plan)
@@ -66,6 +72,8 @@ def test_profitability_gate_negative_net() -> None:
         estimated_fee_usd=1.0,
         estimated_slippage_usd=0.5,
         estimated_spread_cost_usd=0.5,
+        trade_id="test-3",
+        timestamp=datetime.now(timezone.utc),
     )
     
     passed, breakdown = gate.evaluate(plan)

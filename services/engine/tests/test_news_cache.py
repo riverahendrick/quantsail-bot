@@ -43,25 +43,30 @@ def test_get_news_cache_returns_redis_with_url() -> None:
 
 def test_redis_cache_is_negative_news_active() -> None:
     """Test Redis cache checks for news pause key."""
-    # We need a real redis url for this test or mock it? 
-    # The original test assumed it could connect or mocked it?
-    # Original test:
-    # redis_url = os.environ.get("REDIS_URL", "redis://localhost:6380/0")
-    # cache = RedisNewsCache(redis_url)
-    
-    # We should preserve that behavior but ensure env var doesn't leak
-    redis_url = os.environ.get("REDIS_URL", "redis://localhost:6380/0")
-    cache = RedisNewsCache(redis_url)
+    # Mock the redis client so we don't need a real connection
+    with mock.patch("redis.Redis.from_url") as mock_redis_cls:
+        # Setup the mock client
+        mock_client = mock.Mock()
+        mock_redis_cls.return_value = mock_client
+        
+        # Configure get behavior
+        # First call returns None (False), Second call returns "1" (True)
+        mock_client.get.side_effect = [None, "1"]
+        
+        redis_url = "redis://localhost:6380/0"
+        cache = RedisNewsCache(redis_url)
 
-    # Clear any existing pause
-    cache._client.delete("news:pause:negative")
+        # 1. Clear existing (calls delete) - we just verify call
+        cache._client.delete("news:pause:negative")
+        mock_client.delete.assert_called_with("news:pause:negative")
 
-    # Initially not active
-    assert cache.is_negative_news_active() is False
+        # 2. Initially not active (get returns None)
+        assert cache.is_negative_news_active() is False
 
-    # Set a pause
-    cache._client.set("news:pause:negative", "1")
-    assert cache.is_negative_news_active() is True
+        # 3. Set a pause (calls set) - we verify call
+        cache._client.set("news:pause:negative", "1")
+        mock_client.set.assert_called_with("news:pause:negative", "1")
+        
+        # 4. Now active (get returns "1")
+        assert cache.is_negative_news_active() is True
 
-    # Clean up
-    cache._client.delete("news:pause:negative")

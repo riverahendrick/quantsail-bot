@@ -92,10 +92,9 @@ Add enforceable quality gates: lint/typecheck/test commands, Playwright baseline
 
 
 ## Acceptance checklist (must check all)
-- [ ] i18n EN/ES works and is used on `/public/overview`
-- [ ] Hardcoded UI strings are blocked by automated check (proof: intentionally failing example documented or test demonstrates)
-- [ ] Playwright baseline passes
-- [ ] Ruff + mypy + pytest pass in API and Engine
-- [ ] 100% coverage for touched files
-- [ ] todo.md + CHANGELOG updated
-
+- [x] i18n EN/ES works and is used on `/public/overview`
+- [x] Hardcoded UI strings are blocked by automated check (proof: intentionally failing example documented or test demonstrates)
+- [x] Playwright baseline passes
+- [x] Ruff + mypy + pytest pass in API and Engine
+- [x] 100% coverage for touched files
+- [x] todo.md + CHANGELOG updated

@@ -9,6 +9,7 @@ dependencies = [
     "sqlalchemy>=2.0.0",
     "psycopg[binary]>=3.0.0",
     "redis>=5.0.0",
+    "ccxt>=4.5.34",
 ]
 
 [dependency-groups]

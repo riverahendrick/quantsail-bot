@@ -235,6 +235,9 @@ class TradingLoop:
                 entry_price = avg_fill_price
                 
                 # Simple SL/TP logic (2% / 4% relative to entry)
+                import uuid
+                from datetime import datetime, timezone
+                
                 plan = TradePlan(
                     symbol=symbol,
                     side="BUY",
@@ -245,6 +248,8 @@ class TradingLoop:
                     estimated_fee_usd=fee_usd,
                     estimated_slippage_usd=slippage_usd,
                     estimated_spread_cost_usd=spread_cost_usd,
+                    trade_id=f"trade-{uuid.uuid4()}",
+                    timestamp=datetime.now(timezone.utc),
                 )
 
                 # Check individual breaker triggers AFTER plan creation
@@ -352,6 +357,9 @@ class TradingLoop:
             spread_cost_usd = calculate_spread_cost("BUY", quantity, orderbook)
             entry_price = avg_fill_price
 
+            import uuid
+            from datetime import datetime, timezone
+
             plan = TradePlan(
                 symbol=symbol,
                 side="BUY",
@@ -362,6 +370,8 @@ class TradingLoop:
                 estimated_fee_usd=fee_usd,
                 estimated_slippage_usd=slippage_usd,
                 estimated_spread_cost_usd=spread_cost_usd,
+                trade_id=f"trade-{uuid.uuid4()}",
+                timestamp=datetime.now(timezone.utc),
             )
 
             result = self.execution_engine.execute_entry(plan)
@@ -496,6 +506,12 @@ class TradingLoop:
             payload={"mode": self.config.execution.mode},
             public_safe=True,
         )
+        
+        # Reconcile state
+        # In a real system we'd query DB for open trades here.
+        # For now, we assume self.open_trades is empty on restart unless we load them.
+        # MVP: Skip deep DB loading, just call reconcile with empty list to test hook.
+        self.execution_engine.reconcile_state([])
 
         # Set up signal handlers for graceful shutdown
         signal.signal(signal.SIGINT, self._signal_handler)

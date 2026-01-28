@@ -84,9 +84,9 @@ Implement the DB schema required by the docs, create Alembic migrations, and add
 
 
 ## Acceptance checklist (must check all)
-- [ ] Alembic upgrade head succeeds on fresh DB
-- [ ] Schema verification integration test passes
-- [ ] No undocumented columns were introduced (unless docs updated first)
-- [ ] 100% coverage for touched files
-- [ ] todo.md + CHANGELOG updated
+- [x] Alembic upgrade head succeeds on fresh DB
+- [x] Schema verification integration test passes
+- [x] No undocumented columns were introduced (unless docs updated first)
+- [x] 100% coverage for touched files
+- [x] todo.md + CHANGELOG updated
 

@@ -105,11 +105,10 @@ From the EXISTING repo root, generate a blank Next.js app under `apps/dashboard`
 
 
 ## Acceptance checklist (must check all)
-- [ ] No nested repo root folder exists
-- [ ] `docker compose up -d` starts Postgres and Redis
-- [ ] API responds at `/v1/health`
-- [ ] Engine imports and placeholder runs
-- [ ] Dashboard boots in dev mode
-- [ ] Tests pass with 100% coverage for touched files
-- [ ] todo.md + CHANGELOG updated
-
+- [x] No nested repo root folder exists
+- [x] `docker compose up -d` starts Postgres and Redis
+- [x] API responds at `/v1/health`
+- [x] Engine imports and placeholder runs
+- [x] Dashboard boots in dev mode
+- [x] Tests pass with 100% coverage for touched files
+- [x] todo.md + CHANGELOG updated

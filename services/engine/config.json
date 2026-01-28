@@ -1,0 +1,14 @@
+{
+  "execution": {
+    "mode": "dry-run",
+    "min_profit_usd": 0.10
+  },
+  "risk": {
+    "starting_cash_usd": 10000.0,
+    "max_risk_per_trade_pct": 0.25
+  },
+  "symbols": {
+    "enabled": ["BTC/USDT"],
+    "max_concurrent_positions": 1
+  }
+}

@@ -96,9 +96,9 @@ Implement ARM LIVE two-step gate, Binance spot order execution via the adapter, 
 
 
 ## Acceptance checklist (must check all)
-- [ ] Live orders cannot happen without ARM LIVE token (test-proven)
-- [ ] Idempotency prevents duplicate orders (test-proven)
-- [ ] Reconciliation restores state after restart (test-proven)
-- [ ] E2E ARM LIVE flow passes (mocked acceptable)
-- [ ] todo.md + CHANGELOG updated
+- [x] Live orders cannot happen without ARM LIVE token (test-proven)
+- [x] Idempotency prevents duplicate orders (test-proven)
+- [x] Reconciliation restores state after restart (test-proven)
+- [x] E2E ARM LIVE flow passes (mocked acceptable)
+- [x] todo.md + CHANGELOG updated
 

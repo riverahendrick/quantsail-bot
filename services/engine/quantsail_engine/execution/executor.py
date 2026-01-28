@@ -10,7 +10,7 @@ class ExecutionEngine(ABC):
     """Abstract interface for trade execution."""
 
     @abstractmethod
-    def execute_entry(self, plan: TradePlan) -> dict[str, Any]:
+    def execute_entry(self, plan: TradePlan) -> dict[str, Any] | None:
         """
         Execute entry for a trade plan.
 
@@ -18,7 +18,7 @@ class ExecutionEngine(ABC):
             plan: Trade plan to execute
 
         Returns:
-            Dictionary with trade and orders data
+            Dictionary with trade and orders data or None if failed
         """
         ...
 
@@ -35,3 +35,12 @@ class ExecutionEngine(ABC):
             Dictionary with exit data if exit triggered, None otherwise
         """
         ...
+
+    def reconcile_state(self, open_trades: list[Any]) -> None:
+        """
+        Reconcile internal state with external exchange state on startup.
+        
+        Args:
+            open_trades: List of open trade objects from DB
+        """
+        pass

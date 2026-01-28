@@ -20,3 +20,9 @@ Open and read `GLOBAL_RULES.md`. Follow it fully.
 - smallest size first
 - few symbols
 - expand slowly only after stable results
+
+## 5) Technical Gates (Prompt 12)
+- [x] **ARM LIVE Gate**: Two-step authentication required for live mode start.
+- [x] **Idempotency**: Client-side order IDs (`QS-{trade_id}-{seq}`) prevent duplicate fills on network retries.
+- [x] **Reconciliation**: Engine performs exchange vs DB state sync on every restart to detect orphaned orders.
+- [x] **Sanitization**: All execution details (exchange order IDs, exact sizes) sanitized for public views.

@@ -137,6 +137,7 @@ Append-only domain events.
 
 Columns:
 - id uuid PK
+- seq bigint UNIQUE NOT NULL    -- monotonic cursor for WS resume
 - ts timestamptz NOT NULL
 - level text NOT NULL           -- INFO/WARN/ERROR
 - type text NOT NULL            -- see docs/14_EVENT_TAXONOMY.md
@@ -146,6 +147,7 @@ Columns:
 - public_safe boolean NOT NULL DEFAULT false
 
 Indexes:
+- unique(seq)
 - (ts desc)
 - type
 - symbol

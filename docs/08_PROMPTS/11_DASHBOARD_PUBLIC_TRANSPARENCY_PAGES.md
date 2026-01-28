@@ -81,8 +81,8 @@ Implement `/public/overview`, `/public/trades`, and `/public/transparency` using
 
 
 ## Acceptance checklist (must check all)
-- [ ] Public pages call ONLY /public endpoints
-- [ ] Sanitization is preserved in UI (no forbidden fields can appear)
-- [ ] E2E tests pass
-- [ ] todo.md + CHANGELOG updated
+- [x] Public pages call ONLY /public endpoints
+- [x] Sanitization is preserved in UI (no forbidden fields can appear)
+- [x] E2E tests pass
+- [x] todo.md + CHANGELOG updated
 

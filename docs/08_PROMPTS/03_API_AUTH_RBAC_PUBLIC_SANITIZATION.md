@@ -94,11 +94,11 @@ Implement Firebase JWT verification, RBAC middleware, private endpoints, AND a s
 
 
 ## Acceptance checklist (must check all)
-- [ ] Private endpoints require valid JWT
-- [ ] RBAC blocks forbidden roles (403)
-- [ ] Public endpoints are sanitized (tests assert forbidden fields absent)
-- [ ] Public events only return public_safe=true
-- [ ] Rate limiting exists on public endpoints
-- [ ] 100% coverage for touched files
-- [ ] todo.md + CHANGELOG updated
+- [x] Private endpoints require valid JWT
+- [x] RBAC blocks forbidden roles (403)
+- [x] Public endpoints are sanitized (tests assert forbidden fields absent)
+- [x] Public events only return public_safe=true
+- [x] Rate limiting exists on public endpoints
+- [x] 100% coverage for touched files
+- [x] todo.md + CHANGELOG updated
 

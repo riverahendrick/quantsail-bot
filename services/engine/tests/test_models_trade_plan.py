@@ -1,6 +1,7 @@
 """Unit tests for TradePlan model."""
 
 import pytest
+from datetime import datetime, timezone
 
 from quantsail_engine.models.trade_plan import TradePlan
 
@@ -17,11 +18,14 @@ def test_trade_plan_creation_valid_long() -> None:
         estimated_fee_usd=5.0,
         estimated_slippage_usd=2.0,
         estimated_spread_cost_usd=1.0,
+        trade_id="trade-123",
+        timestamp=datetime.now(timezone.utc),
     )
     assert plan.symbol == "BTC/USDT"
     assert plan.side == "BUY"
     assert plan.entry_price == 50000.0
     assert plan.quantity == 0.1
+    assert plan.trade_id == "trade-123"
 
 
 def test_trade_plan_entry_price_zero() -> None:
@@ -37,6 +41,8 @@ def test_trade_plan_entry_price_zero() -> None:
             estimated_fee_usd=5.0,
             estimated_slippage_usd=2.0,
             estimated_spread_cost_usd=1.0,
+            trade_id="trade-123",
+            timestamp=datetime.now(timezone.utc),
         )
 
 
@@ -53,6 +59,8 @@ def test_trade_plan_entry_price_negative() -> None:
             estimated_fee_usd=5.0,
             estimated_slippage_usd=2.0,
             estimated_spread_cost_usd=1.0,
+            trade_id="trade-123",
+            timestamp=datetime.now(timezone.utc),
         )
 
 
@@ -69,6 +77,8 @@ def test_trade_plan_quantity_zero() -> None:
             estimated_fee_usd=5.0,
             estimated_slippage_usd=2.0,
             estimated_spread_cost_usd=1.0,
+            trade_id="trade-123",
+            timestamp=datetime.now(timezone.utc),
         )
 
 
@@ -85,6 +95,8 @@ def test_trade_plan_long_sl_above_entry() -> None:
             estimated_fee_usd=5.0,
             estimated_slippage_usd=2.0,
             estimated_spread_cost_usd=1.0,
+            trade_id="trade-123",
+            timestamp=datetime.now(timezone.utc),
         )
 
 
@@ -101,6 +113,8 @@ def test_trade_plan_long_tp_below_entry() -> None:
             estimated_fee_usd=5.0,
             estimated_slippage_usd=2.0,
             estimated_spread_cost_usd=1.0,
+            trade_id="trade-123",
+            timestamp=datetime.now(timezone.utc),
         )
 
 
@@ -116,6 +130,8 @@ def test_trade_plan_position_value_usd() -> None:
         estimated_fee_usd=5.0,
         estimated_slippage_usd=2.0,
         estimated_spread_cost_usd=1.0,
+        trade_id="trade-123",
+        timestamp=datetime.now(timezone.utc),
     )
     assert plan.position_value_usd == 5000.0  # 50000 * 0.1
 
@@ -132,6 +148,8 @@ def test_trade_plan_risk_usd() -> None:
         estimated_fee_usd=5.0,
         estimated_slippage_usd=2.0,
         estimated_spread_cost_usd=1.0,
+        trade_id="trade-123",
+        timestamp=datetime.now(timezone.utc),
     )
     assert plan.risk_usd == 100.0  # (50000 - 49000) * 0.1
 
@@ -148,6 +166,8 @@ def test_trade_plan_reward_usd() -> None:
         estimated_fee_usd=5.0,
         estimated_slippage_usd=2.0,
         estimated_spread_cost_usd=1.0,
+        trade_id="trade-123",
+        timestamp=datetime.now(timezone.utc),
     )
     assert plan.reward_usd == 200.0  # (52000 - 50000) * 0.1
 
@@ -164,6 +184,8 @@ def test_trade_plan_risk_reward_ratio() -> None:
         estimated_fee_usd=5.0,
         estimated_slippage_usd=2.0,
         estimated_spread_cost_usd=1.0,
+        trade_id="trade-123",
+        timestamp=datetime.now(timezone.utc),
     )
     assert plan.risk_reward_ratio == 2.0  # 200 / 100
 
@@ -181,6 +203,8 @@ def test_trade_plan_risk_reward_ratio_zero_risk() -> None:
         estimated_fee_usd=5.0,
         estimated_slippage_usd=2.0,
         estimated_spread_cost_usd=1.0,
+        trade_id="trade-123",
+        timestamp=datetime.now(timezone.utc),
     )
     # Should not raise, returns ratio
     assert plan.risk_reward_ratio > 0

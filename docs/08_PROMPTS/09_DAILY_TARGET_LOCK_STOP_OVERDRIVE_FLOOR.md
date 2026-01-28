@@ -86,9 +86,9 @@ Implement daily target lock exactly as in the PRD: STOP mode and OVERDRIVE mode 
 
 
 ## Acceptance checklist (must check all)
-- [ ] STOP mode pauses entries after target reached
-- [ ] OVERDRIVE updates floor and enforces it (scenario test)
-- [ ] Events emitted correctly
-- [ ] 100% coverage for touched files
-- [ ] todo.md + CHANGELOG updated
+- [x] STOP mode pauses entries after target reached
+- [x] OVERDRIVE updates floor and enforces it (scenario test)
+- [x] Events emitted correctly
+- [x] 100% coverage for touched files
+- [x] todo.md + CHANGELOG updated
 

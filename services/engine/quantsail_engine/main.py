@@ -55,7 +55,27 @@ def main() -> int:
     market_data_provider = StubMarketDataProvider(base_price=50000.0)
     # Use EnsembleProvider by default
     signal_provider = EnsembleSignalProvider(config)
-    execution_engine = DryRunExecutor()
+    
+    if config.execution.mode == "live":
+        from quantsail_engine.execution.binance_adapter import BinanceSpotAdapter
+        from quantsail_engine.execution.live_executor import LiveExecutor
+        from quantsail_engine.persistence.repository import EngineRepository
+        
+        api_key = os.environ.get("BINANCE_API_KEY")
+        secret = os.environ.get("BINANCE_SECRET")
+        testnet = os.environ.get("BINANCE_TESTNET", "false").lower() == "true"
+        
+        if not api_key or not secret:
+            logger.error("❌ Live mode requires BINANCE_API_KEY and BINANCE_SECRET")
+            return 1
+            
+        adapter = BinanceSpotAdapter(api_key, secret, testnet=testnet)
+        repo = EngineRepository(session)
+        execution_engine = LiveExecutor(repo, adapter)
+        logger.info(f"✅ Live execution enabled (Testnet: {testnet})")
+    else:
+        execution_engine = DryRunExecutor()
+        logger.info("✅ Dry-run execution enabled")
 
     # Create trading loop
     trading_loop = TradingLoop(

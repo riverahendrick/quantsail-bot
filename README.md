@@ -24,3 +24,29 @@ The docs define exact behavior, interfaces, and acceptance criteria.
 9) docs/06_SECURITY_OPS.md
 10) docs/07_VALIDATION_AND_GO_LIVE.md
 11) docs/12_GLOSSARY.md
+
+## Developer Commands
+### Infrastructure
+- `cd infra/docker && docker compose up -d`
+- `cd infra/docker && docker compose down`
+- Postgres: localhost:5433 (container 5432), Redis: localhost:6380 (container 6379)
+
+### Dashboard (Next.js)
+- `cd apps/dashboard && pnpm install`
+- `cd apps/dashboard && pnpm dev` (http://localhost:3000)
+- `cd apps/dashboard && pnpm lint`
+- `cd apps/dashboard && pnpm typecheck`
+
+### API (FastAPI)
+- Set `DATABASE_URL=postgresql+psycopg://quantsail:postgres@localhost:5433/quantsail`
+- Set `GOOGLE_APPLICATION_CREDENTIALS=/path/to/firebase-service-account.json`
+- Optional: `REDIS_URL=redis://localhost:6380/0` (public rate limiting)
+- `cd services/api && uv run uvicorn app.main:app --reload --host 127.0.0.1 --port 8000`
+- Health check: http://127.0.0.1:8000/v1/health
+- DB health check: http://127.0.0.1:8000/v1/health/db
+- `cd services/api && uv run alembic upgrade head`
+- `cd services/api && uv run pytest -q --cov`
+
+### Engine
+- `cd services/engine && uv run python -m quantsail_engine.main`
+- `cd services/engine && uv run pytest -q --cov`

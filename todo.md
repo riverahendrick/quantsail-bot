@@ -258,3 +258,49 @@
 - Integrated into `TradingLoop` to block entries when target/floor conditions are met, emitting `gate.daily_lock.rejected`.
 - Added comprehensive unit and integration tests covering target hit, peak tracking, floor updates, and floor breaches.
 - Achieved 100% test coverage for all new components.
+
+## Prompt 10 - Private operator dashboard (overview) wired to real API/WS
+- Role: Frontend & UX Engineer
+- [x] Read docs/05_UI_SPEC.md and docs/17_UI_WIREFRAMES_TEXT.md
+- [x] Implement auth gating via `AuthGuard` (mock for dev/test)
+- [x] Build page layout with `DashboardView`, `StatusBanner`, `KPIGrid`, `DailyLockWidget`, `BreakersWidget`, `RecentTrades`
+- [x] Add `AppShell` with sidebar navigation and `EquityChart` visualization
+- [x] Wire data via `useDashboardWs` (hook for real-time updates)
+- [x] Add E2E tests for auth gating and widget rendering
+## Prompt 11 - Public transparency dashboard (sanitized)
+- Role: Frontend & Transparency Engineer
+- [x] Read docs/03_API_SPEC.md for public endpoints
+- [x] Create `PublicShell`, `PublicKPIs`, and shared public types
+- [x] Implement `/public/overview` with sanitized KPIs and chart
+- [x] Implement `/public/trades` with sanitized feed (no secrets)
+- [x] Implement `/public/transparency` with explanations
+- [x] Add E2E tests for public pages (verified sanitization)
+## Prompt 12 - ARM LIVE gate + Binance spot live execution + restart reconciliation
+- Role: High-Risk Execution Engineer
+- [x] Implement API ARM LIVE endpoints (`/bot/arm`, `/bot/start` w/ token)
+- [x] Implement `BinanceSpotAdapter` using `ccxt`
+- [x] Implement `LiveExecutor` with idempotency logic
+- [x] Implement restart reconciliation in `TradingLoop`
+- [x] Implement Dashboard ARM LIVE modal
+- [x] Update tests (API, Engine, E2E) proving safety
+- [x] Update docs/CHANGELOG.md
+- [x] Mark checklist complete + add Review section
+
+## Gap Analysis & Remediation (Full System Audit)
+- Role: Senior Systems Architect
+- [x] Perform forensic audit of codebase vs docs
+- [x] Identify critical gaps: Engine Exit Logic, API Endpoints (Config/Keys/Control), Dashboard Pages
+- [x] Implement missing API endpoints (Config, Keys, Bot Control)
+- [x] Create EncryptionService for secure key storage
+- [x] Implement LiveExecutor.check_exits with real exit logic (market sell)
+- [x] Update EngineRepository to support risk fields (stop_price, take_profit_price)
+- [x] Create missing Dashboard pages: Exchange, Strategy, Risk, Events
+- [x] Implement API client in dashboard/lib/api.ts
+- [x] Internationalize all new pages (EN/ES)
+- [x] Verify navigation and build integrity
+
+### Review
+- **API**: Implemented fully functional `v1/config` (versioning), `v1/exchanges` (encrypted keys), and `v1/bot` control endpoints. Added AES-GCM encryption service.
+- **Engine**: Implemented critical missing `LiveExecutor.check_exits` logic to ensure trades can be closed in Live mode. Updated repository to persist risk parameters.
+- **Dashboard**: Built professional, internationalized pages for Strategy (JSON Editor), Risk (Controls), Exchange (Key Management), and Events (Log Table).
+- **Compliance**: Enforced 100% i18n parity for new pages and strictly followed `GLOBAL_RULES` (no mock data in prod paths).

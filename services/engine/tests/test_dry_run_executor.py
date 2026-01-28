@@ -1,5 +1,7 @@
 """Tests for DryRunExecutor."""
 
+import pytest
+from datetime import datetime, timezone
 from quantsail_engine.execution.dry_run_executor import DryRunExecutor
 from quantsail_engine.models.trade_plan import TradePlan
 
@@ -17,6 +19,8 @@ def test_execute_entry_creates_trade_and_orders() -> None:
         estimated_fee_usd=5.0,
         estimated_slippage_usd=2.0,
         estimated_spread_cost_usd=1.0,
+        trade_id="trade-1",
+        timestamp=datetime.now(timezone.utc),
     )
 
     result = executor.execute_entry(plan)
@@ -39,6 +43,8 @@ def test_execute_entry_trade_properties() -> None:
         estimated_fee_usd=3.0,
         estimated_slippage_usd=1.0,
         estimated_spread_cost_usd=0.5,
+        trade_id="trade-2",
+        timestamp=datetime.now(timezone.utc),
     )
 
     result = executor.execute_entry(plan)
@@ -66,6 +72,8 @@ def test_execute_entry_order_types() -> None:
         estimated_fee_usd=5.0,
         estimated_slippage_usd=2.0,
         estimated_spread_cost_usd=1.0,
+        trade_id="trade-3",
+        timestamp=datetime.now(timezone.utc),
     )
 
     result = executor.execute_entry(plan)
@@ -96,6 +104,8 @@ def test_check_exits_no_trigger() -> None:
         estimated_fee_usd=5.0,
         estimated_slippage_usd=2.0,
         estimated_spread_cost_usd=1.0,
+        trade_id="trade-4",
+        timestamp=datetime.now(timezone.utc),
     )
 
     result = executor.execute_entry(plan)
@@ -119,6 +129,8 @@ def test_check_exits_stop_loss_hit() -> None:
         estimated_fee_usd=5.0,
         estimated_slippage_usd=2.0,
         estimated_spread_cost_usd=1.0,
+        trade_id="trade-5",
+        timestamp=datetime.now(timezone.utc),
     )
 
     result = executor.execute_entry(plan)
@@ -145,6 +157,8 @@ def test_check_exits_take_profit_hit() -> None:
         estimated_fee_usd=5.0,
         estimated_slippage_usd=2.0,
         estimated_spread_cost_usd=1.0,
+        trade_id="trade-6",
+        timestamp=datetime.now(timezone.utc),
     )
 
     result = executor.execute_entry(plan)
@@ -171,6 +185,8 @@ def test_check_exits_pnl_calculation() -> None:
         estimated_fee_usd=5.0,
         estimated_slippage_usd=2.0,
         estimated_spread_cost_usd=1.0,
+        trade_id="trade-7",
+        timestamp=datetime.now(timezone.utc),
     )
 
     result = executor.execute_entry(plan)
@@ -196,6 +212,8 @@ def test_check_exits_removes_from_open_trades() -> None:
         estimated_fee_usd=5.0,
         estimated_slippage_usd=2.0,
         estimated_spread_cost_usd=1.0,
+        trade_id="trade-8",
+        timestamp=datetime.now(timezone.utc),
     )
 
     result = executor.execute_entry(plan)

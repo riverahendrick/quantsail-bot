@@ -1,6 +1,8 @@
 """Trade plan model before execution."""
 
 from dataclasses import dataclass
+from datetime import datetime, timezone
+import uuid
 
 
 @dataclass(frozen=True)
@@ -22,6 +24,10 @@ class TradePlan:
     estimated_fee_usd: float
     estimated_slippage_usd: float
     estimated_spread_cost_usd: float
+    
+    # Execution Metadata
+    timestamp: datetime
+    trade_id: str
 
     def __post_init__(self) -> None:
         """Validate trade plan parameters."""

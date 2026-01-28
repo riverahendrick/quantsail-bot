@@ -82,9 +82,8 @@ Implement event writing/reading utilities and a WS endpoint that streams events/
 
 
 ## Acceptance checklist (must check all)
-- [ ] WS streams events from DB
-- [ ] Cursor resume works and is test-proven
-- [ ] No secrets are logged in WS payloads (tests can check redaction rules if implemented)
-- [ ] 100% coverage for touched files
-- [ ] todo.md + CHANGELOG updated
-
+- [x] WS streams events from DB
+- [x] Cursor resume works and is test-proven
+- [x] No secrets are logged in WS payloads (tests can check redaction rules if implemented)
+- [x] 100% coverage for touched files
+- [x] todo.md + CHANGELOG updated

@@ -87,9 +87,9 @@ Implement `/app/overview` private page with status banner, KPIs, daily lock widg
 
 
 ## Acceptance checklist (must check all)
-- [ ] /app/overview renders with translated strings only
-- [ ] Uses private endpoints + WS only
-- [ ] E2E tests pass
-- [ ] 100% coverage for touched UI logic files (as applicable) and no hardcoded strings
-- [ ] todo.md + CHANGELOG updated
+- [x] /app/overview renders with translated strings only
+- [x] Uses private endpoints + WS only
+- [x] E2E tests pass
+- [x] 100% coverage for touched UI logic files (as applicable) and no hardcoded strings
+- [x] todo.md + CHANGELOG updated
 
