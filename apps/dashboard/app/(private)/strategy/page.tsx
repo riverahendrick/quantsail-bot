@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { getBotConfig, createConfigVersion, activateConfig, ConfigVersion } from "@/lib/api";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
@@ -30,7 +30,7 @@ export default function StrategyPage() {
         // First run or empty DB
         setJsonInput("{\n  \"strategies\": {},\n  \"execution\": {},\n  \"risk\": {},\n  \"symbols\": {},\n  \"breakers\": {},\n  \"daily\": {}\n}");
       } else {
-        setError(err.message || "Failed to load config");
+        setError(err.message || t("loadError"));
       }
     } finally {
       setLoading(false);
@@ -52,7 +52,7 @@ export default function StrategyPage() {
       try {
         parsed = JSON.parse(jsonInput);
       } catch (e) {
-        throw new Error("Invalid JSON format");
+        throw new Error(t("invalidJson"));
       }
 
       // 2. Create Version
@@ -61,11 +61,11 @@ export default function StrategyPage() {
       // 3. Activate Version
       await activateConfig(newVersion.version);
 
-      setSuccess(`Version ${newVersion.version} created and activated!`);
+      setSuccess(t("saveSuccess", { version: newVersion.version }));
       await fetchConfig();
 
     } catch (err: any) {
-      setError(err.message || "Failed to save config");
+      setError(err.message || t("saveError"));
     } finally {
       setSaving(false);
     }
@@ -85,7 +85,7 @@ export default function StrategyPage() {
         <Card className="lg:col-span-1 h-fit">
           <CardHeader>
             <CardTitle>{t("activeVersionTitle")}</CardTitle>
-            <CardDescription>{t("activeVersionDesc")}</CardDescription>
+            <p className="text-sm text-muted-foreground">{t("activeVersionDesc")}</p>
           </CardHeader>
           <CardContent className="space-y-4">
             {config ? (
@@ -131,11 +131,11 @@ export default function StrategyPage() {
         <Card className="lg:col-span-2">
           <CardHeader>
             <CardTitle>{t("editorTitle")}</CardTitle>
-            <CardDescription>{t("editorDesc")}</CardDescription>
+            <p className="text-sm text-muted-foreground">{t("editorDesc")}</p>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="json-editor">Config JSON</Label>
+              <Label htmlFor="json-editor">{t("configJsonLabel")}</Label>
               <Textarea
                 id="json-editor"
                 className="font-mono text-xs min-h-[500px]"
@@ -147,7 +147,7 @@ export default function StrategyPage() {
 
             {error && (
               <div className="p-3 rounded-md bg-red-500/10 border border-red-500/20 text-red-600 dark:text-red-400 text-sm">
-                Error: {error}
+                {t("errorPrefix")} {error}
               </div>
             )}
             
