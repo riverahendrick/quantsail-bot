@@ -20,10 +20,16 @@ export async function fetchPrivate<T>(endpoint: string, options: RequestInit = {
   const headers = await getHeaders();
   const url = `${DASHBOARD_CONFIG.API_URL}${endpoint}`;
   
-  const res = await fetch(url, {
-    ...options,
-    headers: { ...headers, ...options.headers },
-  });
+  let res: Response;
+  try {
+    res = await fetch(url, {
+      ...options,
+      headers: { ...headers, ...options.headers },
+    });
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : "Unknown network error";
+    throw new Error(`Network error calling ${url}. Is the API running and reachable? ${message}`);
+  }
 
   if (!res.ok) {
       const errorText = await res.text();
@@ -42,12 +48,12 @@ export async function fetchPrivate<T>(endpoint: string, options: RequestInit = {
 // --- Config ---
 
 export interface BotConfig {
-    strategies: any;
-    execution: any;
-    risk: any;
-    symbols: any;
-    breakers: any;
-    daily: any;
+    strategies: Record<string, unknown>;
+    execution: Record<string, unknown>;
+    risk: Record<string, unknown>;
+    symbols: Record<string, unknown>;
+    breakers: Record<string, unknown>;
+    daily: Record<string, unknown>;
 }
 
 export interface ConfigVersion {
@@ -83,6 +89,8 @@ export interface ExchangeKey {
     label: string | null;
     key_version: number;
     created_at: string;
+    revoked_at: string | null;
+    is_active: boolean;
 }
 
 export async function getKeys() {
@@ -99,6 +107,57 @@ export async function addKey(label: string, apiKey: string, secretKey: string) {
 export async function revokeKey(id: string) {
     return fetchPrivate(`/v1/exchanges/binance/keys/${id}`, {
         method: "DELETE",
+    });
+}
+
+export async function updateKey(id: string, updates: { label?: string; api_key?: string; secret_key?: string }) {
+    return fetchPrivate<ExchangeKey>(`/v1/exchanges/binance/keys/${id}`, {
+        method: "PATCH",
+        body: JSON.stringify(updates),
+    });
+}
+
+export async function activateKey(id: string) {
+    return fetchPrivate(`/v1/exchanges/binance/keys/${id}/activate`, {
+        method: "POST",
+    });
+}
+
+// --- Users (Owner Only) ---
+
+export type UserRole = "OWNER" | "CEO" | "DEVELOPER" | "ADMIN";
+
+export interface ManagedUser {
+    id: string;
+    email: string;
+    role: UserRole;
+    created_at: string;
+    disabled?: boolean | null;
+    password_reset_link?: string | null;
+}
+
+export async function listUsers() {
+    return fetchPrivate<ManagedUser[]>("/v1/users");
+}
+
+export async function createUser(email: string, role: UserRole, sendResetLink: boolean) {
+    return fetchPrivate<ManagedUser>("/v1/users", {
+        method: "POST",
+        body: JSON.stringify({ email, role, send_reset_link: sendResetLink }),
+    });
+}
+
+export async function updateUser(
+    id: string,
+    updates: { role?: UserRole; disabled?: boolean; sendResetLink?: boolean }
+) {
+    return fetchPrivate<ManagedUser>(`/v1/users/${id}`, {
+        method: "PATCH",
+        body: JSON.stringify({
+            role: updates.role,
+            disabled: updates.disabled,
+            send_reset_link: updates.sendResetLink,
+        }),
     });
 }
 
@@ -135,5 +194,5 @@ export async function resumeEntries() {
 // --- Data ---
 
 export async function getPrivateEvents() {
-    return fetchPrivate<any[]>("/v1/events");
+    return fetchPrivate<unknown[]>("/v1/events");
 }

@@ -14,6 +14,16 @@ def get_user_role_by_email(engine: sa.Engine, email: str) -> str | None:
         return conn.execute(query).scalar_one_or_none()
 
 
+def get_user_info_by_email(engine: sa.Engine, email: str) -> tuple[str, str] | None:
+    """Return (user_id, role) for the given user email, if present."""
+    query = sa.select(User.id, User.role).where(User.email == email)
+    with engine.connect() as conn:
+        row = conn.execute(query).fetchone()
+        if row:
+            return str(row.id), row.role
+        return None
+
+
 def list_trades(engine: sa.Engine, limit: int | None = None) -> list[dict[str, Any]]:
     """Return trades ordered by opened_at descending."""
     query = sa.select(Trade.__table__).order_by(sa.desc(Trade.opened_at))

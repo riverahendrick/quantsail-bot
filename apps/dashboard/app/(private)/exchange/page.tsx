@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { getKeys, addKey, revokeKey, ExchangeKey } from "@/lib/api";
+import { useCallback, useEffect, useState } from "react";
+import { getKeys, addKey, revokeKey, updateKey, activateKey, ExchangeKey } from "@/lib/api";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,29 +14,37 @@ export default function ExchangePage() {
   const [keys, setKeys] = useState<ExchangeKey[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [statusMessage, setStatusMessage] = useState<string | null>(null);
+  const [statusKind, setStatusKind] = useState<"success" | "error" | null>(null);
 
   // Form state
   const [label, setLabel] = useState("");
   const [apiKey, setApiKey] = useState("");
   const [secretKey, setSecretKey] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [editingKeyId, setEditingKeyId] = useState<string | null>(null);
+  const [editLabel, setEditLabel] = useState("");
+  const [editApiKey, setEditApiKey] = useState("");
+  const [editSecretKey, setEditSecretKey] = useState("");
+  const [updating, setUpdating] = useState(false);
 
-  const fetchKeys = async () => {
+  const fetchKeys = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
       const data = await getKeys();
       setKeys(data);
-    } catch (err: any) {
-      setError(err.message || "Failed to load keys");
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : t("loadError");
+      setError(msg);
     } finally {
       setLoading(false);
     }
-  };
+  }, [t]);
 
   useEffect(() => {
     fetchKeys();
-  }, []);
+  }, [fetchKeys]);
 
   const handleAddKey = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -44,14 +52,17 @@ export default function ExchangePage() {
 
     setSubmitting(true);
     setError(null);
+    setStatusMessage(null);
+    setStatusKind(null);
     try {
       await addKey(label, apiKey, secretKey);
       setLabel("");
       setApiKey("");
       setSecretKey("");
       await fetchKeys();
-    } catch (err: any) {
-      setError(err.message || "Failed to add key");
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : t("addError");
+      setError(msg);
     } finally {
       setSubmitting(false);
     }
@@ -62,8 +73,64 @@ export default function ExchangePage() {
     try {
       await revokeKey(id);
       await fetchKeys();
-    } catch (err: any) {
-      alert(err.message || "Failed to revoke key");
+    } catch (err: unknown) {
+      setStatusKind("error");
+      const msg = err instanceof Error ? err.message : t("revokeError");
+      setStatusMessage(msg);
+    }
+  };
+
+  const handleActivate = async (id: string) => {
+    setStatusMessage(null);
+    setStatusKind(null);
+    try {
+      await activateKey(id);
+      setStatusKind("success");
+      setStatusMessage(t("activateSuccess"));
+      await fetchKeys();
+    } catch (err: unknown) {
+      setStatusKind("error");
+      const msg = err instanceof Error ? err.message : t("activateError");
+      setStatusMessage(msg);
+    }
+  };
+
+  const startEdit = (key: ExchangeKey) => {
+    setEditingKeyId(key.id);
+    setEditLabel(key.label || "");
+    setEditApiKey("");
+    setEditSecretKey("");
+  };
+
+  const cancelEdit = () => {
+    setEditingKeyId(null);
+    setEditLabel("");
+    setEditApiKey("");
+    setEditSecretKey("");
+  };
+
+  const handleUpdate = async (id: string) => {
+    setUpdating(true);
+    setStatusMessage(null);
+    setStatusKind(null);
+    try {
+      const updates: { label?: string; api_key?: string; secret_key?: string } = {};
+      if (editLabel) updates.label = editLabel;
+      if (editApiKey || editSecretKey) {
+        updates.api_key = editApiKey;
+        updates.secret_key = editSecretKey;
+      }
+      await updateKey(id, updates);
+      setStatusKind("success");
+      setStatusMessage(t("updateSuccess"));
+      cancelEdit();
+      await fetchKeys();
+    } catch (err: unknown) {
+      setStatusKind("error");
+      const msg = err instanceof Error ? err.message : t("updateError");
+      setStatusMessage(msg);
+    } finally {
+      setUpdating(false);
     }
   };
 
@@ -75,6 +142,12 @@ export default function ExchangePage() {
           <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
         </Button>
       </div>
+
+      {statusMessage && (
+        <div className={`p-4 rounded-md border ${statusKind === "error" ? "bg-red-500/10 border-red-500/20 text-red-600" : "bg-green-500/10 border-green-500/20 text-green-600"}`}>
+          {statusMessage}
+        </div>
+      )}
 
       <div className="grid gap-6 md:grid-cols-2">
         {/* Add Key Form */}
@@ -91,7 +164,7 @@ export default function ExchangePage() {
                 <Label htmlFor="label">{t("labelLabel")}</Label>
                 <Input
                   id="label"
-                  placeholder="My Binance Key"
+                  placeholder={t("labelPlaceholder")}
                   value={label}
                   onChange={(e) => setLabel(e.target.value)}
                   disabled={submitting}
@@ -102,7 +175,7 @@ export default function ExchangePage() {
                 <Input
                   id="apiKey"
                   type="password"
-                  placeholder="Paste API Key"
+                  placeholder={t("apiKeyPlaceholder")}
                   value={apiKey}
                   onChange={(e) => setApiKey(e.target.value)}
                   disabled={submitting}
@@ -113,7 +186,7 @@ export default function ExchangePage() {
                 <Input
                   id="secretKey"
                   type="password"
-                  placeholder="Paste Secret Key"
+                  placeholder={t("secretKeyPlaceholder")}
                   value={secretKey}
                   onChange={(e) => setSecretKey(e.target.value)}
                   disabled={submitting}
@@ -148,23 +221,84 @@ export default function ExchangePage() {
                     className="flex items-center justify-between p-4 border rounded-lg bg-card/50"
                   >
                     <div>
-                      <p className="font-medium">{key.label || "Untitled Key"}</p>
+                      <div className="flex items-center gap-2">
+                        <p className="font-medium">{key.label || t("untitledKey")}</p>
+                        <span className={`text-xs px-2 py-0.5 rounded-full border ${key.is_active ? "border-green-500/30 text-green-600 bg-green-500/10" : "border-muted text-muted-foreground"}`}>
+                          {key.is_active ? t("activeLabel") : t("inactiveLabel")}
+                        </span>
+                      </div>
                       <p className="text-xs text-muted-foreground font-mono">
-                        ID: {key.id.slice(0, 8)}...
+                        {t("idLabel")} {key.id.slice(0, 8)}{t("Common.ellipsis")}
                       </p>
-                      <p className="text-xs text-muted-foreground">
-                        {key.exchange.toUpperCase()} • v{key.key_version}
-                      </p>
+                      <div className="text-xs text-muted-foreground flex items-center gap-2">
+                        <span>{key.exchange.toUpperCase()}</span>
+                        <span className="border-r border-muted-foreground/50 h-3" />
+                        <span>{t("versionLabel", { v: key.key_version })}</span>
+                      </div>
                     </div>
-                    <Button
-                      variant="destructive"
-                      size="icon"
-                      onClick={() => handleRevoke(key.id)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
+                    <div className="flex items-center gap-2">
+                      {!key.is_active && (
+                        <Button variant="outline" size="sm" onClick={() => handleActivate(key.id)}>
+                          {t("activateButton")}
+                        </Button>
+                      )}
+                      <Button variant="outline" size="sm" onClick={() => startEdit(key)}>
+                        {t("editButton")}
+                      </Button>
+                      <Button
+                        variant="destructive"
+                        size="icon"
+                        onClick={() => handleRevoke(key.id)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </div>
                 ))}
+                {editingKeyId && (
+                  <div className="p-4 border rounded-lg bg-card/70 space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="edit-label">{t("editLabel")}</Label>
+                      <Input
+                        id="edit-label"
+                        placeholder={t("labelPlaceholder")}
+                        value={editLabel}
+                        onChange={(e) => setEditLabel(e.target.value)}
+                        disabled={updating}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="edit-api">{t("apiKeyLabel")}</Label>
+                      <Input
+                        id="edit-api"
+                        type="password"
+                        placeholder={t("apiKeyPlaceholder")}
+                        value={editApiKey}
+                        onChange={(e) => setEditApiKey(e.target.value)}
+                        disabled={updating}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="edit-secret">{t("secretKeyLabel")}</Label>
+                      <Input
+                        id="edit-secret"
+                        type="password"
+                        placeholder={t("secretKeyPlaceholder")}
+                        value={editSecretKey}
+                        onChange={(e) => setEditSecretKey(e.target.value)}
+                        disabled={updating}
+                      />
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Button onClick={() => handleUpdate(editingKeyId)} disabled={updating}>
+                        {updating ? t("updatingButton") : t("updateButton")}
+                      </Button>
+                      <Button variant="outline" onClick={cancelEdit} disabled={updating}>
+                        {t("cancelButton")}
+                      </Button>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </CardContent>

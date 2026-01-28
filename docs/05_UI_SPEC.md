@@ -13,6 +13,7 @@ Private:
 - /app/risk
 - /app/exchange
 - /app/events
+- /app/users
 
 Public:
 - /public/overview

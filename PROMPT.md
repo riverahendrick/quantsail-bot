@@ -52,3 +52,20 @@ Role: Event Streaming Engineer
 - Implemented events repo helpers, WS endpoint with backlog + heartbeat, and payload redaction.
 - Added WS streaming/resume tests and helper coverage for cursor parsing and auth mapping.
 - Started Docker services and ran pytest with 100% coverage after fixing WS auth/cursor tests and trade FK setup in event tests.
+
+## Prompt 17 - Users Admin Page + Test Run
+Date: 2026-01-28
+Role: Systems Architect
+
+### Plan (approved)
+- Add E2E coverage for `/app/users` (auth flow + key UI checks).
+- Implement Users admin page (create/list/update/reset link).
+- Add dashboard API helpers and nav item + EN/ES translations.
+- Align /app routes with UI specs.
+- Run Alembic + API/Engine/Playwright tests.
+
+### Progress log
+- Added Users admin page with create/list/update/reset link controls and i18n EN/ES.
+- Added `/app/*` route aliases and updated sidebar navigation to match UI specs.
+- Added Playwright E2E test for `/app/users` and enabled mock mode for E2E server.
+- Ran Alembic + API/Engine/Playwright tests (see latest run outputs for failures due to missing env and existing test gaps).

@@ -20,13 +20,14 @@ export default function RiskPage() {
     useEffect(() => {
         getBotConfig()
             .then(setConfig)
-            .catch((err: any) => {
+            .catch((err: unknown) => {
                 setStatusKind("error");
-                setStatusMessage(t("configLoadError", { error: err?.message || t("unknownError") }));
+                const msg = err instanceof Error ? err.message : t("unknownError");
+                setStatusMessage(t("configLoadError", { error: msg }));
             });
     }, [t]);
 
-    const handleAction = async (actionLabel: string, actionFn: () => Promise<any>) => {
+    const handleAction = async (actionLabel: string, actionFn: () => Promise<unknown>) => {
         setActionLoading(actionLabel);
         setStatusMessage(null);
         setStatusKind(null);
@@ -34,9 +35,10 @@ export default function RiskPage() {
             await actionFn();
             setStatusKind("success");
             setStatusMessage(t("actionSuccess", { action: actionLabel }));
-        } catch (err: any) {
+        } catch (err: unknown) {
             setStatusKind("error");
-            setStatusMessage(t("actionError", { action: actionLabel, error: err?.message || t("unknownError") }));
+            const msg = err instanceof Error ? err.message : t("unknownError");
+            setStatusMessage(t("actionError", { action: actionLabel, error: msg }));
         } finally {
             setActionLoading(null);
         }
@@ -110,15 +112,15 @@ export default function RiskPage() {
                             <div className="space-y-2 text-sm">
                                 <div className="flex justify-between border-b pb-2">
                                     <span className="text-muted-foreground">{t("targetMode")}</span>
-                                    <span className="font-mono">{config.config_json?.daily?.mode || t("notAvailable")}</span>
+                                    <span className="font-mono">{(config.config_json?.daily as Record<string, unknown>)?.mode as string || t("notAvailable")}</span>
                                 </div>
                                 <div className="flex justify-between border-b pb-2">
                                     <span className="text-muted-foreground">{t("targetUsd")}</span>
-                                    <span className="font-mono">{formatCurrency(config.config_json?.daily?.target_usd || 0)}</span>
+                                    <span className="font-mono">{formatCurrency((config.config_json?.daily as Record<string, number>)?.target_usd || 0)}</span>
                                 </div>
                                 <div className="flex justify-between border-b pb-2">
                                     <span className="text-muted-foreground">{t("maxLossUsd")}</span>
-                                    <span className="font-mono text-red-500">{formatCurrency(-Math.abs(config.config_json?.daily?.max_loss_usd || 0))}</span>
+                                    <span className="font-mono text-red-500">{formatCurrency(-Math.abs((config.config_json?.daily as Record<string, number>)?.max_loss_usd || 0))}</span>
                                 </div>
                             </div>
                         ) : (

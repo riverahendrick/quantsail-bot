@@ -4,6 +4,9 @@ from unittest.mock import patch
 
 from pytest import LogCaptureFixture
 
+from quantsail_engine.config.models import BotConfig, ExecutionConfig
+from quantsail_engine.security.encryption import DecryptedCredentials
+
 from main import main as run_main
 from quantsail_engine.main import main
 
@@ -72,3 +75,39 @@ def test_main_runtime_error(caplog: LogCaptureFixture) -> None:
     
     assert result == 1
     assert "Trading loop error: Crash" in caplog.text
+
+
+def test_main_live_mode_requires_keys(caplog: LogCaptureFixture) -> None:
+    caplog.set_level(logging.ERROR)
+    live_config = BotConfig(execution=ExecutionConfig(mode="live"))
+
+    with patch("quantsail_engine.main.load_config", return_value=live_config), \
+        patch.dict(os.environ, {"MASTER_KEY": "11" * 32}, clear=False), \
+        patch("quantsail_engine.persistence.repository.EngineRepository.get_active_exchange_credentials", return_value=None), \
+        patch("quantsail_engine.main.TradingLoop") as mock_loop:
+        # Clear BINANCE keys to force failure
+        if "BINANCE_API_KEY" in os.environ: del os.environ["BINANCE_API_KEY"]
+        if "BINANCE_SECRET" in os.environ: del os.environ["BINANCE_SECRET"]
+        
+        mock_loop.return_value.run.return_value = None
+        result = main()
+
+    assert result == 1
+    assert "Live mode requires active exchange keys" in caplog.text
+
+
+def test_main_live_mode_uses_db_keys(caplog: LogCaptureFixture) -> None:
+    caplog.set_level(logging.INFO)
+    live_config = BotConfig(execution=ExecutionConfig(mode="live"))
+    creds = DecryptedCredentials(api_key="api", secret_key="secret")
+
+    with patch("quantsail_engine.main.load_config", return_value=live_config), \
+        patch.dict(os.environ, {"MASTER_KEY": "22" * 32, "BINANCE_TESTNET": "false"}, clear=False), \
+        patch("quantsail_engine.persistence.repository.EngineRepository.get_active_exchange_credentials", return_value=creds), \
+        patch("quantsail_engine.execution.binance_adapter.BinanceSpotAdapter") as mock_adapter, \
+        patch("quantsail_engine.main.TradingLoop") as mock_loop:
+        mock_loop.return_value.run.return_value = None
+        result = main()
+
+    assert result == 0
+    mock_adapter.assert_called_with("api", "secret", testnet=False)

@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { useDashboardStore } from '@/lib/store';
 import { auth } from '@/lib/firebase';
+import { DASHBOARD_CONFIG } from "@/lib/config";
 
 export function useDashboardWs() {
   const { setBotState, addTrade, addEvent, setConnected, updateHeartbeat } = useDashboardStore();
@@ -22,8 +23,7 @@ export function useDashboardWs() {
           }
         }
 
-        // Use localhost:8000 for MVP dev - normally env var
-        const wsUrl = `ws://localhost:8000/ws?token=${token}`; 
+        const wsUrl = `${DASHBOARD_CONFIG.WS_URL}?token=${token}`; 
         
         const ws = new WebSocket(wsUrl);
         wsRef.current = ws;

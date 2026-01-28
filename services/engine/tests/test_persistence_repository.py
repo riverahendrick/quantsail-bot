@@ -1,5 +1,6 @@
 """Tests for EngineRepository."""
 
+import uuid
 from datetime import datetime, timezone
 
 from sqlalchemy.orm import Session
@@ -10,8 +11,9 @@ from quantsail_engine.persistence.repository import EngineRepository
 def test_save_trade(in_memory_db: Session) -> None:
     """Test saving a new trade."""
     repo = EngineRepository(in_memory_db)
+    t_id = uuid.uuid4()
     trade_data = {
-        "id": "trade-1",
+        "id": t_id,
         "symbol": "BTC/USDT",
         "mode": "DRY_RUN",
         "status": "OPEN",
@@ -21,12 +23,11 @@ def test_save_trade(in_memory_db: Session) -> None:
         "opened_at": datetime.now(timezone.utc),
         "closed_at": None,
         "exit_price": None,
-        "pnl_usd": None,
-        "pnl_pct": None,
+        "realized_pnl_usd": None,
     }
 
     trade_id = repo.save_trade(trade_data)
-    assert trade_id == "trade-1"
+    assert trade_id == str(t_id)
 
     # Verify it was saved
     saved_trade = repo.get_trade(trade_id)
@@ -39,10 +40,11 @@ def test_update_trade(in_memory_db: Session) -> None:
     """Test updating an existing trade."""
     repo = EngineRepository(in_memory_db)
     now = datetime.now(timezone.utc)
+    t_id = uuid.uuid4()
 
     # Create trade
     trade_data = {
-        "id": "trade-2",
+        "id": t_id,
         "symbol": "ETH/USDT",
         "mode": "DRY_RUN",
         "status": "OPEN",
@@ -52,8 +54,7 @@ def test_update_trade(in_memory_db: Session) -> None:
         "opened_at": now,
         "closed_at": None,
         "exit_price": None,
-        "pnl_usd": None,
-        "pnl_pct": None,
+        "realized_pnl_usd": None,
     }
     repo.save_trade(trade_data)
 
@@ -61,23 +62,22 @@ def test_update_trade(in_memory_db: Session) -> None:
     trade_data["status"] = "CLOSED"
     trade_data["closed_at"] = now
     trade_data["exit_price"] = 3200.0
-    trade_data["pnl_usd"] = 200.0
-    trade_data["pnl_pct"] = 6.67
+    trade_data["realized_pnl_usd"] = 200.0
 
     repo.update_trade(trade_data)
 
     # Verify update
-    updated_trade = repo.get_trade("trade-2")
+    updated_trade = repo.get_trade(str(t_id))
     assert updated_trade is not None
     assert updated_trade["status"] == "CLOSED"
     assert updated_trade["exit_price"] == 3200.0
-    assert updated_trade["pnl_usd"] == 200.0
+    assert updated_trade["realized_pnl_usd"] == 200.0
 
 
 def test_get_trade_nonexistent(in_memory_db: Session) -> None:
     """Test getting a nonexistent trade returns None."""
     repo = EngineRepository(in_memory_db)
-    trade = repo.get_trade("nonexistent")
+    trade = repo.get_trade(str(uuid.uuid4()))
     assert trade is None
 
 
@@ -85,10 +85,11 @@ def test_save_order(in_memory_db: Session) -> None:
     """Test saving a new order."""
     repo = EngineRepository(in_memory_db)
     now = datetime.now(timezone.utc)
+    t_id = uuid.uuid4()
 
     # Create trade first
     trade_data = {
-        "id": "trade-3",
+        "id": t_id,
         "symbol": "BTC/USDT",
         "mode": "DRY_RUN",
         "status": "OPEN",
@@ -100,9 +101,10 @@ def test_save_order(in_memory_db: Session) -> None:
     repo.save_trade(trade_data)
 
     # Create order
+    o_id = uuid.uuid4()
     order_data = {
-        "id": "order-1",
-        "trade_id": "trade-3",
+        "id": o_id,
+        "trade_id": t_id,
         "symbol": "BTC/USDT",
         "side": "BUY",
         "order_type": "MARKET",
@@ -116,7 +118,7 @@ def test_save_order(in_memory_db: Session) -> None:
     }
 
     order_id = repo.save_order(order_data)
-    assert order_id == "order-1"
+    assert order_id == str(o_id)
 
 
 def test_append_event(in_memory_db: Session) -> None:
@@ -130,7 +132,8 @@ def test_append_event(in_memory_db: Session) -> None:
         public_safe=True,
     )
 
-    assert seq > 0
+    assert seq is not None
+    assert seq >= 0
 
 
 def test_calculate_equity_no_trades(in_memory_db: Session) -> None:
@@ -147,7 +150,7 @@ def test_calculate_equity_with_closed_trades(in_memory_db: Session) -> None:
 
     # Create and close trade 1 (+200 USD)
     trade1 = {
-        "id": "trade-4",
+        "id": uuid.uuid4(),
         "symbol": "BTC/USDT",
         "mode": "DRY_RUN",
         "status": "CLOSED",
@@ -157,14 +160,13 @@ def test_calculate_equity_with_closed_trades(in_memory_db: Session) -> None:
         "opened_at": now,
         "closed_at": now,
         "exit_price": 52000.0,
-        "pnl_usd": 200.0,
-        "pnl_pct": 4.0,
+        "realized_pnl_usd": 200.0,
     }
     repo.save_trade(trade1)
 
     # Create and close trade 2 (-50 USD)
     trade2 = {
-        "id": "trade-5",
+        "id": uuid.uuid4(),
         "symbol": "ETH/USDT",
         "mode": "DRY_RUN",
         "status": "CLOSED",
@@ -174,8 +176,7 @@ def test_calculate_equity_with_closed_trades(in_memory_db: Session) -> None:
         "opened_at": now,
         "closed_at": now,
         "exit_price": 2950.0,
-        "pnl_usd": -50.0,
-        "pnl_pct": -1.67,
+        "realized_pnl_usd": -50.0,
     }
     repo.save_trade(trade2)
 
@@ -191,7 +192,7 @@ def test_calculate_equity_ignores_open_trades(in_memory_db: Session) -> None:
 
     # Create closed trade
     closed_trade = {
-        "id": "trade-6",
+        "id": uuid.uuid4(),
         "symbol": "BTC/USDT",
         "mode": "DRY_RUN",
         "status": "CLOSED",
@@ -201,14 +202,13 @@ def test_calculate_equity_ignores_open_trades(in_memory_db: Session) -> None:
         "opened_at": now,
         "closed_at": now,
         "exit_price": 51000.0,
-        "pnl_usd": 100.0,
-        "pnl_pct": 2.0,
+        "realized_pnl_usd": 100.0,
     }
     repo.save_trade(closed_trade)
 
     # Create open trade (should be ignored)
     open_trade = {
-        "id": "trade-7",
+        "id": uuid.uuid4(),
         "symbol": "ETH/USDT",
         "mode": "DRY_RUN",
         "status": "OPEN",

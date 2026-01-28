@@ -3,6 +3,7 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import secrets
 import uuid
 from datetime import datetime, timezone, timedelta
 from typing import Any, cast
@@ -12,12 +13,20 @@ from fastapi import APIRouter, Depends, HTTPException
 from fastapi.encoders import jsonable_encoder
 from pydantic import BaseModel, Field, field_validator
 
+from app.api.errors import error_detail
 from app.auth.dependencies import require_roles
+from app.auth.firebase import (
+    create_firebase_user,
+    generate_password_reset_link,
+    get_firebase_user_by_email,
+    set_firebase_custom_claims,
+    update_firebase_user,
+)
 from app.auth.types import AuthUser, Role
 from app.cache.arming import get_arming_cache
 from app.cache.news import get_news_cache
 from app.db.engine import get_engine
-from app.db.models import BotConfigVersion, ExchangeKey
+from app.db.models import BotConfigVersion, ExchangeKey, User
 from app.db.queries import list_equity_snapshots, list_events, list_trades
 from app.security.encryption import get_encryption_service
 
@@ -77,6 +86,7 @@ class ExchangeKeyResponse(BaseModel):
     key_version: int
     created_at: datetime
     revoked_at: datetime | None
+    is_active: bool
 
 
 class NewsIngestRequest(BaseModel):
@@ -95,6 +105,30 @@ class NewsIngestResponse(BaseModel):
     paused: bool = Field(..., description="Whether trading was paused")
     reason: str = Field(..., description="Reason for pause or rejection")
     pause_until: str | None = Field(None, description="ISO timestamp when pause expires")
+
+
+class UserCreateRequest(BaseModel):
+    """Request to create a new user."""
+    email: str = Field(..., description="User email")
+    role: Role = Field(..., description="Assigned role")
+    send_reset_link: bool = Field(default=True, description="Return password reset link")
+
+
+class UserUpdateRequest(BaseModel):
+    """Request to update user role or disable access."""
+    role: Role | None = Field(default=None, description="Updated role")
+    disabled: bool | None = Field(default=None, description="Disable or enable user")
+    send_reset_link: bool = Field(default=False, description="Return password reset link")
+
+
+class UserResponse(BaseModel):
+    """Response for user management."""
+    id: str
+    email: str
+    role: Role
+    created_at: datetime
+    disabled: bool | None = None
+    password_reset_link: str | None = None
 
 
 # --- Bot Control Endpoints ---
@@ -148,6 +182,136 @@ def resume_entries(_user: AuthUser = Depends(require_roles(*ALLOWED_ROLES))) -> 
     return {"status": "entries_resumed"}
 
 
+# --- User Management (Owner Only) ---
+
+def _resolve_firebase_user(email: str) -> tuple[str | None, bool | None]:
+    """Return (uid, disabled) for a Firebase user if present."""
+    record = get_firebase_user_by_email(email)
+    if not record:
+        return None, None
+    return record.uid, bool(record.disabled)
+
+
+@router.get("/users")
+def list_users(
+    _user: AuthUser = Depends(require_roles(Role.OWNER)),
+) -> list[UserResponse]:
+    """List users with roles (owner-only)."""
+    with get_engine().connect() as conn:
+        rows = conn.execute(sa.select(User).order_by(User.created_at.asc())).mappings().all()
+
+    responses: list[UserResponse] = []
+    for row in rows:
+        uid, disabled = _resolve_firebase_user(row["email"])
+        responses.append(
+            UserResponse(
+                id=str(row["id"]),
+                email=row["email"],
+                role=Role(row["role"]),
+                created_at=row["created_at"],
+                disabled=disabled,
+            )
+        )
+    return responses
+
+
+@router.post("/users")
+def create_user(
+    request: UserCreateRequest,
+    _user: AuthUser = Depends(require_roles(Role.OWNER)),
+) -> UserResponse:
+    """Create a new user with Firebase + DB role."""
+    email = request.email.strip().lower()
+    with get_engine().begin() as conn:
+        existing = conn.execute(sa.select(User).where(User.email == email)).scalar_one_or_none()
+        if existing:
+            raise HTTPException(
+                status_code=409,
+                detail=error_detail("USER_EXISTS", "User already exists."),
+            )
+
+        # Create or reuse Firebase user
+        record = get_firebase_user_by_email(email)
+        if not record:
+            temp_password = secrets.token_urlsafe(16)
+            record = create_firebase_user(email=email, password=temp_password)
+
+        set_firebase_custom_claims(record.uid, {"role": request.role.value})
+
+        user_id = uuid.uuid4()
+        result = conn.execute(
+            sa.insert(User)
+            .values(id=user_id, email=email, role=request.role.value)
+            .returning(User.created_at)
+        ).fetchone()
+        created_at = result[0] if result else datetime.now(timezone.utc)
+
+    reset_link = None
+    if request.send_reset_link:
+        reset_link = generate_password_reset_link(email)
+
+    return UserResponse(
+        id=str(user_id),
+        email=email,
+        role=request.role,
+        created_at=created_at,
+        disabled=bool(record.disabled),
+        password_reset_link=reset_link,
+    )
+
+
+@router.patch("/users/{user_id}")
+def update_user(
+    user_id: str,
+    request: UserUpdateRequest,
+    _user: AuthUser = Depends(require_roles(Role.OWNER)),
+) -> UserResponse:
+    """Update a user's role or disable/enable access."""
+    try:
+        user_uuid = uuid.UUID(user_id)
+    except ValueError:
+        raise HTTPException(status_code=400, detail=error_detail("INVALID_ID", "Invalid user id."))
+
+    with get_engine().begin() as conn:
+        row = conn.execute(sa.select(User).where(User.id == user_uuid)).mappings().one_or_none()
+        if not row:
+            raise HTTPException(status_code=404, detail=error_detail("NOT_FOUND", "User not found."))
+
+        if request.role is not None:
+            conn.execute(
+                sa.update(User)
+                .where(User.id == user_uuid)
+                .values(role=request.role.value)
+            )
+
+    uid, disabled = _resolve_firebase_user(row["email"])
+    if not uid:
+        raise HTTPException(
+            status_code=404,
+            detail=error_detail("FIREBASE_USER_NOT_FOUND", "Firebase user not found."),
+        )
+
+    if request.role is not None:
+        set_firebase_custom_claims(uid, {"role": request.role.value})
+
+    if request.disabled is not None:
+        updated = update_firebase_user(uid, disabled=request.disabled)
+        disabled = bool(updated.disabled)
+
+    reset_link = None
+    if request.send_reset_link:
+        reset_link = generate_password_reset_link(row["email"])
+
+    role_value = request.role if request.role is not None else Role(row["role"])
+    return UserResponse(
+        id=str(row["id"]),
+        email=row["email"],
+        role=role_value,
+        created_at=row["created_at"],
+        disabled=disabled,
+        password_reset_link=reset_link,
+    )
+
 # --- Config Endpoints ---
 
 @router.get("/config")
@@ -155,18 +319,18 @@ def get_active_config(_user: AuthUser = Depends(require_roles(*ALLOWED_ROLES))) 
     """Get the currently active configuration."""
     with get_engine().connect() as conn:
         stmt = sa.select(BotConfigVersion).where(BotConfigVersion.is_active.is_(True))
-        row = conn.execute(stmt).scalar_one_or_none()
+        row = conn.execute(stmt).mappings().one_or_none()
         
         if not row:
             raise HTTPException(status_code=404, detail={"code": "NO_CONFIG", "message": "No active config found"})
             
         return ConfigResponse(
-            version=row.version,
-            config_hash=row.config_hash,
-            is_active=row.is_active,
-            created_at=row.created_at,
-            activated_at=row.activated_at,
-            config_json=row.config_json,
+            version=row["version"],
+            config_hash=row["config_hash"],
+            is_active=row["is_active"],
+            created_at=row["created_at"],
+            activated_at=row["activated_at"],
+            config_json=row["config_json"],
         )
 
 
@@ -260,6 +424,16 @@ def add_binance_key(
     ciphertext, nonce = svc.encrypt(payload)
     
     with get_engine().begin() as conn:
+        # Deactivate existing active keys for this exchange
+        conn.execute(
+            sa.update(ExchangeKey)
+            .where(
+                ExchangeKey.exchange == "binance",
+                ExchangeKey.revoked_at.is_(None),
+            )
+            .values(is_active=False)
+        )
+
         key_id = uuid.uuid4()
         conn.execute(
             sa.insert(ExchangeKey).values(
@@ -270,6 +444,7 @@ def add_binance_key(
                 nonce=nonce,
                 key_version=1,
                 created_by=user.user_id,
+                is_active=True,
             )
         )
         
@@ -285,7 +460,8 @@ def add_binance_key(
             label=row.label,
             key_version=row.key_version,
             created_at=row.created_at,
-            revoked_at=row.revoked_at
+            revoked_at=row.revoked_at,
+            is_active=row.is_active,
         )
 
 
@@ -294,19 +470,25 @@ def revoke_binance_key(
     key_id: str,
     _user: AuthUser = Depends(require_roles(Role.OWNER))
 ) -> dict[str, str]:
-    """Revoke (delete) an exchange key."""
+    """Revoke an exchange key (soft delete)."""
     try:
         u_id = uuid.UUID(key_id)
     except ValueError:
-        raise HTTPException(status_code=400, detail="Invalid UUID")
+        raise HTTPException(
+            status_code=400, detail=error_detail("INVALID_ID", "Invalid key id.")
+        )
 
     with get_engine().begin() as conn:
         result = conn.execute(
-            sa.delete(ExchangeKey).where(ExchangeKey.id == u_id)
+            sa.update(ExchangeKey)
+            .where(ExchangeKey.id == u_id)
+            .values(revoked_at=datetime.now(timezone.utc), is_active=False)
         )
         if result.rowcount == 0:
-            raise HTTPException(status_code=404, detail="Key not found")
-            
+            raise HTTPException(
+                status_code=404, detail=error_detail("NOT_FOUND", "Key not found.")
+            )
+
     return {"status": "revoked", "id": key_id}
 
 
@@ -318,18 +500,137 @@ def get_key_status(
     with get_engine().connect() as conn:
         rows = conn.execute(
             sa.select(ExchangeKey).where(ExchangeKey.revoked_at.is_(None))
-        ).scalars().all()
+        ).mappings().all()
         
         return [
             ExchangeKeyResponse(
-                id=str(r.id),
-                exchange=r.exchange,
-                label=r.label,
-                key_version=r.key_version,
-                created_at=r.created_at,
-                revoked_at=r.revoked_at
+                id=str(r["id"]),
+                exchange=r["exchange"],
+                label=r["label"],
+                key_version=r["key_version"],
+                created_at=r["created_at"],
+                revoked_at=r["revoked_at"],
+                is_active=r["is_active"],
             ) for r in rows
         ]
+
+
+class ExchangeKeyUpdate(BaseModel):
+    """Request to update an exchange key (label or rotate secrets)."""
+    label: str | None = Field(default=None, description="Updated label")
+    api_key: str | None = Field(default=None, description="New API key")
+    secret_key: str | None = Field(default=None, description="New secret key")
+
+    @field_validator("secret_key")
+    def _validate_rotation(cls, secret_key: str | None, info: Any) -> str | None:
+        api_key = info.data.get("api_key") if hasattr(info, "data") else None
+        if (api_key and not secret_key) or (secret_key and not api_key):
+            raise ValueError("api_key and secret_key must be provided together.")
+        return secret_key
+
+
+@router.patch("/exchanges/binance/keys/{key_id}")
+def update_binance_key(
+    key_id: str,
+    request: ExchangeKeyUpdate,
+    _user: AuthUser = Depends(require_roles(Role.OWNER)),
+) -> ExchangeKeyResponse:
+    """Update label or rotate Binance credentials."""
+    try:
+        u_id = uuid.UUID(key_id)
+    except ValueError:
+        raise HTTPException(
+            status_code=400, detail=error_detail("INVALID_ID", "Invalid key id.")
+        )
+
+    update_values: dict[str, Any] = {}
+    if request.label is not None:
+        update_values["label"] = request.label
+
+    if request.api_key and request.secret_key:
+        svc = get_encryption_service()
+        payload = f"{request.api_key}:{request.secret_key}"
+        ciphertext, nonce = svc.encrypt(payload)
+        update_values["ciphertext"] = ciphertext
+        update_values["nonce"] = nonce
+        update_values["key_version"] = ExchangeKey.key_version + 1
+
+    if not update_values:
+        raise HTTPException(
+            status_code=400, detail=error_detail("INVALID_UPDATE", "No fields to update.")
+        )
+
+    with get_engine().begin() as conn:
+        result = conn.execute(
+            sa.update(ExchangeKey)
+            .where(ExchangeKey.id == u_id)
+            .values(**update_values)
+            .returning(
+                ExchangeKey.id,
+                ExchangeKey.exchange,
+                ExchangeKey.label,
+                ExchangeKey.key_version,
+                ExchangeKey.created_at,
+                ExchangeKey.revoked_at,
+                ExchangeKey.is_active,
+            )
+        ).fetchone()
+
+        if not result:
+            raise HTTPException(
+                status_code=404, detail=error_detail("NOT_FOUND", "Key not found.")
+            )
+
+        return ExchangeKeyResponse(
+            id=str(result.id),
+            exchange=result.exchange,
+            label=result.label,
+            key_version=result.key_version,
+            created_at=result.created_at,
+            revoked_at=result.revoked_at,
+            is_active=result.is_active,
+        )
+
+
+@router.post("/exchanges/binance/keys/{key_id}/activate")
+def activate_binance_key(
+    key_id: str,
+    _user: AuthUser = Depends(require_roles(Role.OWNER)),
+) -> dict[str, str]:
+    """Activate a specific Binance key (deactivate others)."""
+    try:
+        u_id = uuid.UUID(key_id)
+    except ValueError:
+        raise HTTPException(
+            status_code=400, detail=error_detail("INVALID_ID", "Invalid key id.")
+        )
+
+    with get_engine().begin() as conn:
+        row = conn.execute(
+            sa.select(ExchangeKey).where(ExchangeKey.id == u_id)
+        ).mappings().one_or_none()
+        if not row:
+            raise HTTPException(
+                status_code=404, detail=error_detail("NOT_FOUND", "Key not found.")
+            )
+        if row["revoked_at"] is not None:
+            raise HTTPException(
+                status_code=400, detail=error_detail("KEY_REVOKED", "Key is revoked.")
+            )
+
+        conn.execute(
+            sa.update(ExchangeKey)
+            .where(
+                ExchangeKey.exchange == row["exchange"],
+                ExchangeKey.revoked_at.is_(None),
+            )
+            .values(is_active=False)
+        )
+        conn.execute(
+            sa.update(ExchangeKey).where(ExchangeKey.id == u_id).values(is_active=True)
+        )
+
+    return {"status": "activated", "id": key_id}
 
 
 # --- Read-Only Data Endpoints ---
@@ -369,7 +670,7 @@ def orders(_user: AuthUser = Depends(require_roles(*ALLOWED_ROLES))) -> list[dic
     with get_engine().connect() as conn:
         from app.db.models import Order
         stmt = sa.select(Order).order_by(Order.created_at.desc()).limit(100)
-        rows = conn.execute(stmt).scalars().all()
+        rows = conn.execute(stmt).mappings().all()
         return cast(list[dict[str, object]], jsonable_encoder(rows))
 
 

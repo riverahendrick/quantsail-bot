@@ -375,6 +375,15 @@ class TradingLoop:
             )
 
             result = self.execution_engine.execute_entry(plan)
+            if not result:
+                self.repo.append_event(
+                    event_type="execution.failed",
+                    level="ERROR",
+                    payload={"symbol": symbol, "reason": "entry_execution_failed"},
+                    public_safe=False,
+                )
+                sm.transition_to(TradingState.IDLE)
+                return
             trade = result["trade"]
             orders = result["orders"]
 
@@ -470,8 +479,8 @@ class TradingLoop:
                         "symbol": symbol,
                         "exit_reason": exit_reason,
                         "exit_price": trade["exit_price"],
-                        "pnl_usd": trade["pnl_usd"],
-                        "pnl_pct": trade["pnl_pct"],
+                        "pnl_usd": trade.get("realized_pnl_usd"),
+                        "pnl_pct": trade.get("pnl_pct"),
                     },
                     public_safe=True,
                 )

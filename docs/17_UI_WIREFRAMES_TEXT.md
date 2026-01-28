@@ -23,6 +23,10 @@
 - Filters: level/type/symbol/date
 - Event drawer for payload (owner only export)
 
+## Private /app/users
+- Create user form (email, role, send reset link)
+- Users table with role selector, disabled toggle, reset-link action
+
 ## Public /public/overview
 - Simple KPI cards + equity curve + status banner
 - Link to transparency explanation

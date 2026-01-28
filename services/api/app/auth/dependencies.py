@@ -9,7 +9,7 @@ from app.api.errors import error_detail
 from app.auth.firebase import verify_firebase_token
 from app.auth.types import AuthUser, Role
 from app.db.engine import get_engine
-from app.db.queries import get_user_role_by_email
+from app.db.queries import get_user_info_by_email
 
 security = HTTPBearer(auto_error=False)
 
@@ -52,16 +52,23 @@ def resolve_user_from_token(token: str) -> AuthUser:
     if not email or not firebase_uid:
         raise _rbac_forbidden()
 
-    role_value = get_user_role_by_email(get_engine(), str(email))
-    if not role_value:
+    user_info = get_user_info_by_email(get_engine(), str(email))
+    if not user_info:
         raise _rbac_forbidden()
+
+    user_id_str, role_value = user_info
 
     try:
         role = Role(role_value)
     except ValueError as exc:
         raise _rbac_forbidden() from exc
 
-    return AuthUser(email=str(email), firebase_uid=str(firebase_uid), role=role)
+    return AuthUser(
+        email=str(email),
+        firebase_uid=str(firebase_uid),
+        role=role,
+        user_id=user_id_str,
+    )
 
 
 def _extract_ws_token(websocket: WebSocket) -> str | None:

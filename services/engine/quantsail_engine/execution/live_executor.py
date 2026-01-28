@@ -50,13 +50,7 @@ class LiveExecutor(ExecutionEngine):
                 payload={"trade_id": plan.trade_id},
                 public_safe=False
             )
-            # Cannot return full dict easily without fetching everything. 
-            # Returning None implies failure/skip in loop. 
-            # Ideally we'd return the existing trade data.
-            # For MVP, returning None logs an error in caller or just stops flow.
-            # But the caller expects a dict with "trade" and "orders" keys to persist.
-            # Since it's already persisted, we should probably throw or return None.
-            return None
+            return {"trade": existing, "orders": []}
 
         # 3. Create on Exchange
         try:
@@ -249,15 +243,32 @@ class LiveExecutor(ExecutionEngine):
             # Simple check: Ensure we can fetch balances or connectivity
             # Real reconciliation is complex (matching IDs), out of MVP scope for full auto-correction.
             # We just verify connectivity and log open orders.
-            
-            # If we had a list of symbols, we'd check them. 
+
+            # If we had a list of symbols, we'd check them.
             # For now, just a connectivity check via balance.
-            self.adapter.get_balances()
+            self.adapter.fetch_balance()
+
+            for trade in open_trades:
+                symbol = getattr(trade, "symbol", None)
+                trade_id = getattr(trade, "id", None)
+                if not symbol or not trade_id:
+                    continue
+                open_orders = self.adapter.fetch_open_orders(symbol)
+                self.repo.append_event(
+                    event_type="reconcile.symbol",
+                    level="INFO",
+                    payload={
+                        "symbol": symbol,
+                        "db_open_trade": trade_id,
+                        "exchange_open_orders": len(open_orders),
+                    },
+                    public_safe=False
+                )
             
             self.repo.append_event(
                 event_type="reconcile.completed",
                 level="INFO",
-                payload={"status": "connectivity_verified"},
+                payload={"checked_trades": len(open_trades)},
                 public_safe=True
             )
             

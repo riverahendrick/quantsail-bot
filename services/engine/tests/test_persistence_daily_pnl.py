@@ -1,5 +1,6 @@
 """Tests for EngineRepository daily PnL."""
 
+import uuid
 from datetime import datetime, timedelta, timezone
 
 from sqlalchemy.orm import Session
@@ -13,17 +14,17 @@ def test_get_today_realized_pnl(in_memory_db: Session) -> None:
     
     # Trade 1: Closed Today (+50)
     repo.save_trade({
-        "id": "t1", "symbol": "BTC/USDT", "mode": "DRY_RUN", "status": "CLOSED", 
-        "side": "BUY", "entry_price": 100, "quantity": 1, "opened_at": now, 
-        "closed_at": now, "pnl_usd": 50.0, "pnl_pct": 0.5
+        "id": uuid.uuid4(), "symbol": "BTC/USDT", "mode": "DRY_RUN", "status": "CLOSED",
+        "side": "BUY", "entry_price": 100, "quantity": 1, "opened_at": now,
+        "closed_at": now, "realized_pnl_usd": 50.0 #, "pnl_pct": 0.5
     })
     
     # Trade 2: Closed Yesterday (should be ignored)
-    yesterday = now - timedelta(days=1, hours=1) 
+    yesterday = now - timedelta(days=1, hours=1)
     repo.save_trade({
-        "id": "t2", "symbol": "BTC/USDT", "mode": "DRY_RUN", "status": "CLOSED",
+        "id": uuid.uuid4(), "symbol": "BTC/USDT", "mode": "DRY_RUN", "status": "CLOSED",
         "side": "BUY", "entry_price": 100, "quantity": 1, "opened_at": yesterday,
-        "closed_at": yesterday, "pnl_usd": 100.0, "pnl_pct": 1.0
+        "closed_at": yesterday, "realized_pnl_usd": 100.0 #, "pnl_pct": 1.0
     })
     
     pnl = repo.get_today_realized_pnl("UTC")
@@ -32,13 +33,14 @@ def test_get_today_realized_pnl(in_memory_db: Session) -> None:
 def test_get_today_closed_trades(in_memory_db: Session) -> None:
     repo = EngineRepository(in_memory_db)
     now = datetime.now(timezone.utc)
-    
+    t_id = uuid.uuid4()
+
     repo.save_trade({
-        "id": "t1", "symbol": "BTC/USDT", "mode": "DRY_RUN", "status": "CLOSED",
+        "id": t_id, "symbol": "BTC/USDT", "mode": "DRY_RUN", "status": "CLOSED",
         "side": "BUY", "entry_price": 100, "quantity": 1, "opened_at": now,
-        "closed_at": now, "pnl_usd": 50.0, "pnl_pct": 0.5
+        "closed_at": now, "realized_pnl_usd": 50.0 #, "pnl_pct": 0.5
     })
     
     trades = repo.get_today_closed_trades("UTC")
     assert len(trades) == 1
-    assert trades[0].id == "t1"
+    assert trades[0].id == t_id

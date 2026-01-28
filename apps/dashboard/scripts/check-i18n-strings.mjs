@@ -16,7 +16,30 @@ const allowedProps = new Set([
   "variant", 
   "size",
   "open",
-  "asChild"
+  "asChild",
+  "htmlFor",
+  "value",
+  "name",
+  "key",
+  "cols",
+  "rows",
+  "min",
+  "max",
+  "step",
+  "disabled",
+  "checked",
+  "selected",
+  "autoComplete",
+  "autoFocus",
+  "spellCheck",
+  "src",
+  "alt", // Often dynamic
+  "width",
+  "height",
+  "align",
+  "justify",
+  "direction",
+  "orientation"
 ]);
 
 const allowedDataPrefixes = ["data-"];

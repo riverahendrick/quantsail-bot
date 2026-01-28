@@ -18,7 +18,7 @@ RBAC roles (from DB):
 - OWNER, CEO, DEVELOPER, ADMIN
 
 Allowed roles (MVP):
-- `/v1/health`, `/v1/health/db`, `/v1/status`, `/v1/trades`, `/v1/events`, `/v1/equity`
+- `/v1/health`, `/v1/health/db`, `/v1/status`, `/v1/trades`, `/v1/orders`, `/v1/events`, `/v1/equity`
   - allowed: OWNER, CEO, DEVELOPER
   - denied: ADMIN
 
@@ -51,18 +51,32 @@ Keys
 - POST `/v1/exchanges/binance/keys`
 - DELETE `/v1/exchanges/binance/keys/{key_id}`
 - GET `/v1/exchanges/binance/keys/status` (no secrets)
+- PATCH `/v1/exchanges/binance/keys/{key_id}` (label update or rotate secrets)
+- POST `/v1/exchanges/binance/keys/{key_id}/activate` (set active key)
+  - Status responses include: id, exchange, label, key_version, created_at, revoked_at, is_active.
 
 Bot control
+- POST `/v1/bot/arm`
 - POST `/v1/bot/start`
 - POST `/v1/bot/stop`
 - POST `/v1/bot/pause_entries`
 - POST `/v1/bot/resume_entries`
+
+Users (owner-only)
+- GET `/v1/users`
+- POST `/v1/users`
+- PATCH `/v1/users/{user_id}`
 
 Data
 - GET `/v1/trades`
 - GET `/v1/orders`
 - GET `/v1/events`
 - GET `/v1/equity`
+
+News
+- POST `/v1/news/ingest`
+- GET `/v1/news/status`
+- DELETE `/v1/news/pause`
 
 ## 3) Public endpoints (MVP)
 - GET `/public/v1/summary`

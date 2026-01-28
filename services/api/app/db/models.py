@@ -45,6 +45,9 @@ class ExchangeKey(Base):
     created_at: Mapped[dt.datetime] = mapped_column(
         sa.DateTime(timezone=True), server_default=sa.text("now()"), nullable=False
     )
+    is_active: Mapped[bool] = mapped_column(
+        sa.Boolean(), server_default=sa.text("true"), nullable=False
+    )
     revoked_at: Mapped[dt.datetime | None] = mapped_column(
         sa.DateTime(timezone=True), nullable=True
     )
@@ -130,9 +133,12 @@ class Order(Base):
     order_type: Mapped[str] = mapped_column(sa.Text(), nullable=False)
     qty: Mapped[Decimal] = mapped_column(NUMERIC_24_10, nullable=False)
     price: Mapped[Decimal | None] = mapped_column(NUMERIC_24_10, nullable=True)
+    filled_qty: Mapped[Decimal | None] = mapped_column(NUMERIC_24_10, nullable=True)
+    filled_price: Mapped[Decimal | None] = mapped_column(NUMERIC_24_10, nullable=True)
     status: Mapped[str] = mapped_column(sa.Text(), nullable=False)
     exchange_order_id: Mapped[str | None] = mapped_column(sa.Text(), nullable=True)
     idempotency_key: Mapped[str | None] = mapped_column(sa.Text(), nullable=True)
+    filled_at: Mapped[dt.datetime | None] = mapped_column(sa.DateTime(timezone=True), nullable=True)
     created_at: Mapped[dt.datetime] = mapped_column(
         sa.DateTime(timezone=True), server_default=sa.text("now()"), nullable=False
     )

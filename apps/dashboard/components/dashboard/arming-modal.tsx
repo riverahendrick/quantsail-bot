@@ -14,6 +14,7 @@ import {
 import { AlertTriangle, Lock, ShieldCheck } from "lucide-react";
 import { DASHBOARD_CONFIG } from "@/lib/config";
 import { useTranslations } from "next-intl";
+import { auth } from "@/lib/firebase";
 
 export function ArmingModal() {
   const [isOpen, setIsOpen] = useState(false);

@@ -1,6 +1,9 @@
 """Integration tests for TradingLoop daily lock."""
 
+import uuid
 from datetime import datetime, timezone
+from unittest.mock import MagicMock
+
 
 from quantsail_engine.config.models import BotConfig, DailyConfig, ExecutionConfig
 from quantsail_engine.core.trading_loop import TradingLoop
@@ -31,10 +34,11 @@ def test_daily_lock_blocks_entry(in_memory_db) -> None:
 
     # Pre-seed DB with a closed trade that hits target
     now = datetime.now(timezone.utc)
+    t_id = uuid.uuid4()
     trade = Trade(
-        id="t1", symbol="BTC/USDT", mode="dry-run", status="CLOSED",
-        side="BUY", entry_price=100, quantity=1, opened_at=now, closed_at=now,
-        pnl_usd=50.0 # Hits target exactly
+        id=t_id, symbol="BTC/USDT", mode="dry-run", status="CLOSED",
+        side="BUY", entry_price=100, entry_qty=1, opened_at=now, closed_at=now,
+        realized_pnl_usd=50.0 # Hits target exactly
     )
     in_memory_db.add(trade)
     in_memory_db.commit()
@@ -46,7 +50,7 @@ def test_daily_lock_blocks_entry(in_memory_db) -> None:
     # We should have 1 trade in DB (the pre-seeded one)
     trades = in_memory_db.query(Trade).all()
     assert len(trades) == 1
-    assert trades[0].id == "t1"
+    assert trades[0].id == t_id
     
     # Verify event emitted
     events = in_memory_db.query(Event).all()
@@ -79,14 +83,14 @@ def test_daily_lock_overdrive_floor_breach(in_memory_db) -> None:
     # 2. Lose 15 -> Current 45 (Below Floor)
     now = datetime.now(timezone.utc)
     t1 = Trade(
-        id="t1", symbol="BTC/USDT", mode="dry-run", status="CLOSED", side="BUY",
-        entry_price=100, quantity=1, opened_at=now, closed_at=now,
-        pnl_usd=60.0
+        id=uuid.uuid4(), symbol="BTC/USDT", mode="dry-run", status="CLOSED", side="BUY",
+        entry_price=100, entry_qty=1, opened_at=now, closed_at=now,
+        realized_pnl_usd=60.0
     )
     t2 = Trade(
-        id="t2", symbol="BTC/USDT", mode="dry-run", status="CLOSED", side="BUY",
-        entry_price=100, quantity=1, opened_at=now, closed_at=now,
-        pnl_usd=-15.0
+        id=uuid.uuid4(), symbol="BTC/USDT", mode="dry-run", status="CLOSED", side="BUY",
+        entry_price=100, entry_qty=1, opened_at=now, closed_at=now,
+        realized_pnl_usd=-15.0
     )
     # Net: +45. Peak: 60. Floor: 50. Current < Floor -> Locked.
     

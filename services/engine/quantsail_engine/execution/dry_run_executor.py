@@ -45,6 +45,8 @@ class DryRunExecutor(ExecutionEngine):
             "entry_price": plan.entry_price,
             "quantity": plan.quantity,
             "opened_at": now,
+            "stop_price": plan.stop_loss_price,
+            "take_profit_price": plan.take_profit_price,
             "closed_at": None,
             "exit_price": None,
             "pnl_usd": None,

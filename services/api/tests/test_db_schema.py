@@ -94,6 +94,7 @@ def test_schema_tables_and_columns_exist(migrated_engine: sa.Engine) -> None:
             "key_version": {"udt_name": "int4", "is_nullable": "NO"},
             "created_by": {"udt_name": "uuid", "is_nullable": "YES"},
             "created_at": {"udt_name": "timestamptz", "is_nullable": "NO"},
+            "is_active": {"udt_name": "bool", "is_nullable": "NO"},
             "revoked_at": {"udt_name": "timestamptz", "is_nullable": "YES"},
         },
         "bot_config_versions": {
@@ -276,6 +277,7 @@ def test_schema_indexes_exist(migrated_engine: sa.Engine) -> None:
         "uq_users_email": {"unique": True},
         "uq_bot_config_versions_version": {"unique": True},
         "uq_bot_config_versions_is_active": {"unique": True, "where": "is_active"},
+        "uq_exchange_keys_active": {"unique": True, "where": "is_active"},
         "ix_trades_symbol_opened_at": {"desc": "opened_at"},
         "ix_trades_status": {},
         "ix_orders_trade_id": {},
@@ -371,6 +373,7 @@ def test_exchange_keys_allows_nullable_fields(migrated_engine: sa.Engine) -> Non
         "nonce": b"nonce",
         "key_version": 1,
         "created_by": None,
+        "is_active": True,
         "revoked_at": None,
     }
 

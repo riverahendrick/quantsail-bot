@@ -94,7 +94,10 @@ export function EquityChart() {
             <Tooltip 
               contentStyle={{ backgroundColor: '#18181b', borderColor: '#27272a', color: '#fafafa' }}
               itemStyle={{ color: '#3b82f6' }}
-              formatter={(val: number | string | Array<number | string>) => [formatCurrency(Number(val)), t("equity")]}
+              formatter={(val: number | string | Array<number | string> | undefined) => [
+                formatCurrency(Number(val ?? 0)), 
+                t("equity")
+              ]}
               labelStyle={{ color: '#a1a1aa' }}
             />
             <Area

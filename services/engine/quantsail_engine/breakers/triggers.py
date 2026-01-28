@@ -118,20 +118,23 @@ def check_consecutive_losses(
     # Query recent closed trades
     recent_trades = repo.get_recent_closed_trades(limit=config.max_losses + 5)
 
-    if not recent_trades:
-        return False, None
+        if not recent_trades:
+            return False, None
 
-    # Count consecutive losses from most recent backwards
-    consecutive_losses = 0
-    losing_trade_ids = []
+        # Count consecutive losses from most recent backwards
+        consecutive_losses = 0
+        losing_trade_ids = []
 
-    for trade in recent_trades:
-        if trade["pnl_usd"] is not None and trade["pnl_usd"] < 0:
-            consecutive_losses += 1
-            losing_trade_ids.append(trade["id"])
-        else:
-            # Stop counting at first non-losing trade
-            break
+        for trade in recent_trades:
+            # Check realized_pnl_usd
+            pnl = trade.get("realized_pnl_usd")
+            if pnl is not None and pnl < 0:
+                consecutive_losses += 1
+                losing_trade_ids.append(trade["id"])
+            else:
+                # Streak broken by a winner or breakeven
+                break
+
 
     if consecutive_losses >= config.max_losses:
         context = {

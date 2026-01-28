@@ -1,5 +1,6 @@
 """Integration tests for Profitability Gate within TradingLoop."""
 
+import uuid
 from datetime import datetime, timezone
 from unittest.mock import MagicMock, patch
 
@@ -212,9 +213,8 @@ def test_gate_breaker_rejects_entry(in_memory_db: Session) -> None:
     events = in_memory_db.query(Event).filter(Event.type == "gate.breaker.rejected").all()
     assert len(events) == 1
     assert events[0].level == "WARN"
-    assert events[0].public_safe == "true"
-
-
+    assert events[0].public_safe is True
+    
 def test_gate_volatility_breaker_triggers(in_memory_db: Session) -> None:
     """Test volatility breaker triggers during trade planning."""
     config = BotConfig()
@@ -330,18 +330,18 @@ def test_gate_consecutive_losses_breaker_triggers(in_memory_db: Session) -> None
     from quantsail_engine.persistence.stub_models import Trade
     for i in range(3):
         trade = Trade(
-            id=f"trade{i}",
+            id=uuid.uuid4(),
             symbol="BTC/USDT",
             mode="DRY_RUN",
             status="CLOSED",
             side="LONG",
             entry_price=100.0,
-            quantity=0.01,
+            entry_qty=0.01,
             opened_at=datetime.now(timezone.utc),
             closed_at=datetime.now(timezone.utc),
             exit_price=98.0,
-            pnl_usd=-2.0,
-            pnl_pct=-2.0,
+            realized_pnl_usd=-2.0,
+            # pnl_pct=-2.0, # Removed as per new model?
         )
         in_memory_db.add(trade)
     in_memory_db.commit()

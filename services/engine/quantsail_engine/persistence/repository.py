@@ -1,18 +1,24 @@
 """Engine repository for database persistence operations."""
 
+import uuid
+import json
 from datetime import datetime, timezone
+from decimal import Decimal
 from typing import Any
 from zoneinfo import ZoneInfo
 
 from sqlalchemy.orm import Session
 
+from quantsail_engine.security.encryption import DecryptedCredentials, EncryptionService
+
 # Try to import from API service, fall back to stub models
 try:
-    from app.db.models import EquitySnapshot, Event, Order, Trade  # type: ignore[import-not-found]
+    from app.db.models import EquitySnapshot, Event, ExchangeKey, Order, Trade  # type: ignore[import-not-found]
 except ModuleNotFoundError:
     from quantsail_engine.persistence.stub_models import (
         EquitySnapshot,
         Event,
+        ExchangeKey,
         Order,
         Trade,
     )
@@ -41,26 +47,29 @@ class EngineRepository:
             Trade ID
         """
         trade = Trade(
-            id=trade_data["id"],
+            id=uuid.UUID(str(trade_data["id"])),
             symbol=trade_data["symbol"],
             mode=trade_data["mode"],
             status=trade_data["status"],
             side=trade_data["side"],
             entry_price=trade_data["entry_price"],
-            quantity=trade_data["quantity"],
+            entry_qty=trade_data["quantity"],
+            entry_notional_usd=trade_data["entry_price"] * trade_data["quantity"],
             opened_at=trade_data["opened_at"],
-            stop_price=trade_data["stop_price"],
-            take_profit_price=trade_data["take_profit_price"],
+            stop_price=trade_data.get("stop_price"),
+            take_profit_price=trade_data.get("take_profit_price"),
             trailing_enabled=trade_data.get("trailing_enabled", False),
             trailing_offset=trade_data.get("trailing_offset"),
             closed_at=trade_data.get("closed_at"),
             exit_price=trade_data.get("exit_price"),
-            pnl_usd=trade_data.get("pnl_usd"),
-            pnl_pct=trade_data.get("pnl_pct"),
+            realized_pnl_usd=trade_data.get("realized_pnl_usd"),
+            # fees_paid_usd=trade_data.get("fees_paid_usd"),
+            # slippage_est_usd=trade_data.get("slippage_est_usd"),
+            # notes=trade_data.get("notes"),
         )
         self.session.add(trade)
         self.session.commit()
-        trade_id: str = trade.id
+        trade_id: str = str(trade.id)
         return trade_id
 
     def update_trade(self, trade_data: dict[str, Any]) -> None:
@@ -70,13 +79,15 @@ class EngineRepository:
         Args:
             trade_data: Trade data dictionary with id
         """
-        trade = self.session.query(Trade).filter(Trade.id == trade_data["id"]).first()
+        trade_id = uuid.UUID(str(trade_data["id"]))
+        trade = self.session.query(Trade).filter(Trade.id == trade_id).first()
         if trade:
             trade.status = trade_data["status"]
             trade.closed_at = trade_data.get("closed_at")
             trade.exit_price = trade_data.get("exit_price")
-            trade.pnl_usd = trade_data.get("pnl_usd")
-            trade.pnl_pct = trade_data.get("pnl_pct")
+            trade.realized_pnl_usd = trade_data.get("realized_pnl_usd")
+            # trade.fees_paid_usd = trade_data.get("fees_paid_usd")
+            # trade.slippage_est_usd = trade_data.get("slippage_est_usd")
             self.session.commit()
 
     def get_trade(self, trade_id: str) -> dict[str, Any] | None:
@@ -89,18 +100,23 @@ class EngineRepository:
         Returns:
             Trade data dictionary or None
         """
-        trade = self.session.query(Trade).filter(Trade.id == trade_id).first()
+        try:
+            t_id = uuid.UUID(str(trade_id))
+        except ValueError:
+            return None
+
+        trade = self.session.query(Trade).filter(Trade.id == t_id).first()
         if not trade:
             return None
 
         return {
-            "id": trade.id,
+            "id": str(trade.id),
             "symbol": trade.symbol,
             "mode": trade.mode,
             "status": trade.status,
             "side": trade.side,
             "entry_price": trade.entry_price,
-            "quantity": trade.quantity,
+            "quantity": trade.entry_qty,
             "opened_at": trade.opened_at,
             "stop_price": trade.stop_price,
             "take_profit_price": trade.take_profit_price,
@@ -108,8 +124,8 @@ class EngineRepository:
             "trailing_offset": trade.trailing_offset,
             "closed_at": trade.closed_at,
             "exit_price": trade.exit_price,
-            "pnl_usd": trade.pnl_usd,
-            "pnl_pct": trade.pnl_pct,
+            "realized_pnl_usd": trade.realized_pnl_usd,
+            "pnl_pct": 0.0, # Placeholder
         }
 
     def save_order(self, order_data: dict[str, Any]) -> str:
@@ -123,22 +139,22 @@ class EngineRepository:
             Order ID
         """
         order = Order(
-            id=order_data["id"],
-            trade_id=order_data["trade_id"],
+            id=uuid.UUID(str(order_data["id"])),
+            trade_id=uuid.UUID(str(order_data["trade_id"])),
             symbol=order_data["symbol"],
             side=order_data["side"],
             order_type=order_data["order_type"],
             status=order_data["status"],
-            quantity=order_data["quantity"],
+            qty=order_data["quantity"],
             price=order_data.get("price"),
             filled_price=order_data.get("filled_price"),
             filled_qty=order_data.get("filled_qty"),
-            created_at=order_data["created_at"],
             filled_at=order_data.get("filled_at"),
+            created_at=order_data["created_at"],
         )
         self.session.add(order)
         self.session.commit()
-        order_id: str = order.id
+        order_id: str = str(order.id)
         return order_id
 
     def append_event(
@@ -160,12 +176,22 @@ class EngineRepository:
         Returns:
             Event sequence number
         """
+        def _json_serial(obj: Any) -> Any:
+            if isinstance(obj, Decimal):
+                return float(obj)
+            if isinstance(obj, datetime):
+                return obj.isoformat()
+            return str(obj)
+
+        # Ensure payload is JSON serializable
+        safe_payload = json.loads(json.dumps(payload, default=_json_serial))
+
         event = Event(
             type=event_type,
             level=level,
-            payload=payload,
-            public_safe="true" if public_safe else "false",
-            timestamp=datetime.now(timezone.utc),
+            payload=safe_payload,
+            public_safe=public_safe,
+            ts=datetime.now(timezone.utc),
         )
         self.session.add(event)
         self.session.commit()
@@ -187,22 +213,54 @@ class EngineRepository:
         closed_trades = (
             self.session.query(Trade).filter(Trade.status == "CLOSED").all()
         )
-        total_pnl = sum(trade.pnl_usd or 0.0 for trade in closed_trades)
+        total_pnl = sum(float(trade.realized_pnl_usd or 0.0) for trade in closed_trades)
         return starting_cash_usd + total_pnl
 
-    def save_equity_snapshot(self, equity_usd: float) -> None:
+    def save_equity_snapshot(
+        self,
+        equity_usd: float,
+        cash_usd: float = 0.0,
+        unrealized_pnl_usd: float = 0.0,
+        realized_pnl_today_usd: float = 0.0,
+        open_positions: int = 0,
+    ) -> None:
         """
         Save an equity snapshot.
 
         Args:
             equity_usd: Current equity in USD
+            cash_usd: Current cash balance
+            unrealized_pnl_usd: Current unrealized PnL
+            realized_pnl_today_usd: PnL realized today
+            open_positions: Count of open positions
         """
         snapshot = EquitySnapshot(
             equity_usd=equity_usd,
-            timestamp=datetime.now(timezone.utc),
+            cash_usd=cash_usd,
+            unrealized_pnl_usd=unrealized_pnl_usd,
+            realized_pnl_today_usd=realized_pnl_today_usd,
+            open_positions=open_positions,
+            ts=datetime.now(timezone.utc),
         )
         self.session.add(snapshot)
         self.session.commit()
+
+    def get_active_exchange_credentials(
+        self, exchange: str, encryption: EncryptionService
+    ) -> DecryptedCredentials | None:
+        """Return active exchange credentials for the given exchange."""
+        row = (
+            self.session.query(ExchangeKey)
+            .filter(
+                ExchangeKey.exchange == exchange,
+                ExchangeKey.revoked_at.is_(None),
+                ExchangeKey.is_active.is_(True),
+            )
+            .first()
+        )
+        if not row:
+            return None
+        return encryption.decrypt(row.ciphertext, row.nonce)
 
     def get_recent_closed_trades(self, limit: int) -> list[dict[str, Any]]:
         """
@@ -223,10 +281,10 @@ class EngineRepository:
         )
         return [
             {
-                "id": trade.id,
+                "id": str(trade.id),
                 "symbol": trade.symbol,
-                "pnl_usd": trade.pnl_usd,
-                "pnl_pct": trade.pnl_pct,
+                "realized_pnl_usd": trade.realized_pnl_usd,
+                "pnl_pct": 0.0, # Placeholder
                 "closed_at": trade.closed_at,
             }
             for trade in trades
@@ -257,7 +315,7 @@ class EngineRepository:
             )
             .all()
         )
-        return sum(trade.pnl_usd or 0.0 for trade in closed_trades)
+        return sum(float(trade.realized_pnl_usd or 0.0) for trade in closed_trades)
 
     def get_today_closed_trades(self, timezone_str: str = "UTC") -> list[Trade]:
         """

@@ -1,4 +1,6 @@
 import signal
+import uuid
+from datetime import datetime, timezone
 from unittest.mock import MagicMock
 
 import pytest
@@ -48,11 +50,12 @@ def test_trading_loop_exit_logic(config: BotConfig, mock_deps: dict[str, MagicMo
 
     symbol = "BTC/USDT"
     sm = loop.state_machines[symbol]
-    
+
     # 1. Setup IN_POSITION state
     # sm.transition_to(TradingState.IN_POSITION)  # Invalid from IDLE
     sm._current_state = TradingState.IN_POSITION  # Force state for testing logic
-    loop.open_trades[symbol] = "trade-123"
+    t_id = str(uuid.uuid4())
+    loop.open_trades[symbol] = t_id
 
     # Mock market data
     # Mid = 52000, Spread = 10 -> Bid 51995, Ask 52005
@@ -63,15 +66,15 @@ def test_trading_loop_exit_logic(config: BotConfig, mock_deps: dict[str, MagicMo
     # Mock exit check returning True (TP hit)
     mock_deps["execution"].check_exits.return_value = {
         "trade": {
-            "id": "trade-123",
+            "id": t_id,
             "exit_price": 52000.0,
-            "pnl_usd": 200.0,
-            "pnl_pct": 0.04,
+            "realized_pnl_usd": 200.0,
+            # "pnl_pct": 0.04,
             "status": "CLOSED"
         },
         "exit_order": {
-            "id": "order-456",
-            "trade_id": "trade-123",
+            "id": str(uuid.uuid4()),
+            "trade_id": t_id,
             "symbol": "BTC/USDT",
             "order_type": "MARKET",
             "side": "SELL",

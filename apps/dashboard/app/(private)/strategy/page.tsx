@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { getBotConfig, createConfigVersion, activateConfig, ConfigVersion } from "@/lib/api";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -18,28 +18,29 @@ export default function StrategyPage() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
-  const fetchConfig = async () => {
+  const fetchConfig = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
       const data = await getBotConfig();
       setConfig(data);
       setJsonInput(JSON.stringify(data.config_json, null, 2));
-    } catch (err: any) {
-      if (err.message.includes("No active config")) {
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : t("loadError");
+      if (msg.includes("No active config")) {
         // First run or empty DB
         setJsonInput("{\n  \"strategies\": {},\n  \"execution\": {},\n  \"risk\": {},\n  \"symbols\": {},\n  \"breakers\": {},\n  \"daily\": {}\n}");
       } else {
-        setError(err.message || t("loadError"));
+        setError(msg);
       }
     } finally {
       setLoading(false);
     }
-  };
+  }, [t]);
 
   useEffect(() => {
     fetchConfig();
-  }, []);
+  }, [fetchConfig]);
 
   const handleSave = async () => {
     setSaving(true);
@@ -51,7 +52,7 @@ export default function StrategyPage() {
       let parsed;
       try {
         parsed = JSON.parse(jsonInput);
-      } catch (e) {
+      } catch {
         throw new Error(t("invalidJson"));
       }
 
@@ -64,8 +65,9 @@ export default function StrategyPage() {
       setSuccess(t("saveSuccess", { version: newVersion.version }));
       await fetchConfig();
 
-    } catch (err: any) {
-      setError(err.message || t("saveError"));
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : t("saveError");
+      setError(msg);
     } finally {
       setSaving(false);
     }
@@ -92,12 +94,12 @@ export default function StrategyPage() {
               <>
                 <div className="flex justify-between items-center border-b pb-2">
                   <span className="text-sm font-medium text-muted-foreground">{t("version")}</span>
-                  <span className="font-mono text-lg font-bold">v{config.version}</span>
+                  <span className="font-mono text-lg font-bold">{t("versionLabel", { v: config.version })}</span>
                 </div>
                 <div className="flex justify-between items-center border-b pb-2">
                   <span className="text-sm font-medium text-muted-foreground">{t("hash")}</span>
                   <span className="font-mono text-xs truncate max-w-[120px]" title={config.config_hash}>
-                    {config.config_hash.slice(0, 8)}...
+                    {config.config_hash.slice(0, 8)}{t("Common.ellipsis")}
                   </span>
                 </div>
                 <div className="flex justify-between items-center border-b pb-2">

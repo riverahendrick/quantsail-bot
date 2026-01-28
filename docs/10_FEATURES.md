@@ -2,15 +2,15 @@
 
 ## MVP — Crypto Spot (Binance)
 ### Core trading
-- [ ] Binance key management (encrypted)
+- [x] Binance key management (encrypted)
 - [ ] Symbol selection (enabled symbols + cadence)
 - [x] Dry‑run default
-- [ ] Strategy outputs + ensemble decision (trend/mean‑reversion/breakout)
+- [x] Strategy outputs + ensemble decision (trend/mean‑reversion/breakout)
 - [x] Fee + slippage profitability gate
 - [ ] Risk sizing + mandatory SL/TP
-- [ ] Circuit breakers (pause entries only)
-- [ ] Daily target lock (STOP/OVERDRIVE + trailing floor)
-- [ ] Negative news shock pause (high impact only)
+- [x] Circuit breakers (pause entries only)
+- [x] Daily target lock (STOP/OVERDRIVE + trailing floor)
+- [x] Negative news shock pause (high impact only)
 
 ### Data + transparency
 - [x] Event taxonomy implemented everywhere
@@ -18,13 +18,14 @@
 - [x] WS streaming to dashboards (private WS with cursor resume)
 
 ### Security
-- [ ] AES‑GCM encrypted keys
+- [x] AES‑GCM encrypted keys
 - [x] RBAC for private endpoints
 - [x] Public endpoints sanitized + rate limited
 
 ### UI
-- [ ] Private operator dashboard
-- [ ] Public transparency dashboard
+- [x] Private operator dashboard
+- [x] Public transparency dashboard
+- [x] User management console (owner‑only)
 - [x] i18n EN/ES + tests preventing hardcoded strings
 
 ## Future (documented only)
@@ -32,4 +33,4 @@
 - [ ] Forex
 - [ ] Stocks
 
-_Last updated: 2026-01-27_
+_Last updated: 2026-01-28_

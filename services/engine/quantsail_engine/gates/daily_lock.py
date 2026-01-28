@@ -146,7 +146,7 @@ class DailyLockManager:
         # If we have trades, we simulate the curve.
 
         for trade in trades:
-            running_pnl += trade.pnl_usd or 0.0
+            running_pnl += trade.realized_pnl_usd or 0.0
             if running_pnl > max_pnl:
                 max_pnl = running_pnl
 

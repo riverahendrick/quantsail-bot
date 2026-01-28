@@ -1,6 +1,15 @@
 # Changelog — Quantsail
 
 ## Unreleased
+- 2026-01-28: **Database URL Driver**: Switched env templates to `postgresql+psycopg://` to match psycopg3 dependency for Alembic/SQLAlchemy.
+- 2026-01-28: **External Service Env Coverage**: Added CryptoPanic and Alpha Vantage placeholders to env templates/local envs and documented key acquisition guidance.
+- 2026-01-28: **Engine Test Stabilization**: Added missing risk fields to dry-run trades, expanded stub models for stop/TP, improved LiveExecutor idempotency/reconcile paths, and added adapter/exit coverage to restore 100% engine test coverage.
+- 2026-01-28: **Users Admin Page + /app Routes**: Added owner-only Users page in the private dashboard (create/list/update/reset link), added /app/* route aliases to align with UI specs, updated nav to include Users, and added Playwright users page coverage with mock mode enabled for E2E.
+- 2026-01-28: **User Management + Key Rotation + DB Key Lookup**: Added owner-only user management endpoints (Firebase user provisioning, role claims, disable/enable). Added exchange key activation/rotation endpoints and dashboard controls. Engine now reads active exchange keys from Postgres (AES-GCM with MASTER_KEY). Added migrations for events.seq and exchange_keys.is_active.
+- 2026-01-28: **Git Ignore for Secrets**: Added .gitignore entries for local env files to avoid committing secrets.
+- 2026-01-28: **Local Env Files + Phase 1 Kickoff**: Added .env files for dashboard/api/engine with inline key instructions, removed engine artifacts, and created Phase 1 progress tracker.
+- 2026-01-28: **Env + Remediation Plan**: Added remediation tracking plan, env templates for dashboard/api/engine, and environment setup guide. Dashboard WebSocket now reads `NEXT_PUBLIC_WS_URL`.
+- 2026-01-28: **Dashboard Runtime Fixes**: Removed invalid CardDescription usage, added missing EN/ES i18n keys for Strategy/Risk pages, and improved error/status handling. Updated dashboard config to make USE_MOCK_DATA opt-in via env flags.
 - 2026-01-28: **Gap Remediation & Full System Audit**: Conducted forensic audit and closed all critical gaps.
   - **API**: Added missing `v1/config` (versioning), `v1/exchanges` (encrypted keys), and `v1/bot` control endpoints. Implemented `EncryptionService` (AES-GCM).
   - **Engine**: Implemented `LiveExecutor.check_exits` (real market sell logic) and updated repository to persist risk parameters (`stop_price`, `take_profit_price`).

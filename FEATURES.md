@@ -1,14 +1,16 @@
 ﻿# FEATURES - Quantsail Feature Registry
 
-_Last updated: 2026-01-27_
+_Last updated: 2026-01-28_
 
 ## User Features
 - [x] Dashboard i18n (EN/ES) with locale switch
 - [x] Public overview page at /public/overview
+- [x] Public trades and transparency pages
 
 ## Admin Features
-- [ ] Admin dashboard (planned)
-- [ ] Admin RBAC and configuration controls
+- [x] Operator dashboard (private)
+- [x] Admin RBAC and configuration controls
+- [x] User management (owner-only)
 
 ## Developer Features
 - [x] Lint/typecheck/test guardrails (dashboard + services)

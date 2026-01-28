@@ -32,10 +32,12 @@ Columns:
 - key_version int NOT NULL DEFAULT 1
 - created_by uuid NULL REFERENCES users(id)
 - created_at timestamptz NOT NULL DEFAULT now()
+- is_active boolean NOT NULL DEFAULT true
 - revoked_at timestamptz NULL
 
 Constraints:
 - (exchange, label) optional uniqueness is allowed but not required
+- Only one active key per exchange (unique where is_active=true and revoked_at is NULL).
 
 Security:
 - plaintext never stored; never returned from API.

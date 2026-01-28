@@ -10,6 +10,7 @@ from quantsail_engine.config.loader import load_config
 from quantsail_engine.core.trading_loop import TradingLoop
 from quantsail_engine.execution.dry_run_executor import DryRunExecutor
 from quantsail_engine.market_data.stub_provider import StubMarketDataProvider
+from quantsail_engine.security.encryption import EncryptionService
 from quantsail_engine.signals.ensemble_provider import EnsembleSignalProvider
 
 # Try to import real DB models, fall back to stub
@@ -61,16 +62,21 @@ def main() -> int:
         from quantsail_engine.execution.live_executor import LiveExecutor
         from quantsail_engine.persistence.repository import EngineRepository
         
-        api_key = os.environ.get("BINANCE_API_KEY")
-        secret = os.environ.get("BINANCE_SECRET")
+        repo = EngineRepository(session)
+        encryption = EncryptionService()
+        credentials = repo.get_active_exchange_credentials("binance", encryption)
+
+        api_key = credentials.api_key if credentials else os.environ.get("BINANCE_API_KEY")
+        secret = credentials.secret_key if credentials else os.environ.get("BINANCE_SECRET")
         testnet = os.environ.get("BINANCE_TESTNET", "false").lower() == "true"
         
         if not api_key or not secret:
-            logger.error("❌ Live mode requires BINANCE_API_KEY and BINANCE_SECRET")
+            logger.error(
+                "❌ Live mode requires active exchange keys (dashboard) or BINANCE_API_KEY/BINANCE_SECRET"
+            )
             return 1
             
         adapter = BinanceSpotAdapter(api_key, secret, testnet=testnet)
-        repo = EngineRepository(session)
         execution_engine = LiveExecutor(repo, adapter)
         logger.info(f"✅ Live execution enabled (Testnet: {testnet})")
     else:

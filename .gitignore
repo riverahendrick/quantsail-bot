@@ -1,0 +1,7 @@
+# Local environment files (do not commit secrets)
+apps/dashboard/.env.local
+apps/dashboard/.env.*.local
+services/api/.env
+services/engine/.env
+.env
+.env.*

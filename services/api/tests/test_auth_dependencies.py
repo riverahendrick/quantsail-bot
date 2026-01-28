@@ -57,13 +57,13 @@ def test_get_current_user_unknown_user(monkeypatch: pytest.MonkeyPatch) -> None:
         """Return a placeholder engine object."""
         return object()
 
-    def _lookup(_: object, __: str) -> str | None:
+    def _lookup(_: object, __: str) -> tuple[str, str] | None:
         """Return no role to simulate a missing user."""
         return None
 
     monkeypatch.setattr("app.auth.dependencies.verify_firebase_token", _verify)
     monkeypatch.setattr("app.auth.dependencies.get_engine", _get_engine)
-    monkeypatch.setattr("app.auth.dependencies.get_user_role_by_email", _lookup)
+    monkeypatch.setattr("app.auth.dependencies.get_user_info_by_email", _lookup)
 
     with pytest.raises(HTTPException) as exc:
         get_current_user(_credentials())
@@ -83,13 +83,13 @@ def test_get_current_user_invalid_role(monkeypatch: pytest.MonkeyPatch) -> None:
         """Return a placeholder engine object."""
         return object()
 
-    def _lookup(_: object, __: str) -> str:
+    def _lookup(_: object, __: str) -> tuple[str, str]:
         """Return a role that is not part of the enum."""
-        return "HACKER"
+        return ("uid-123", "HACKER")
 
     monkeypatch.setattr("app.auth.dependencies.verify_firebase_token", _verify)
     monkeypatch.setattr("app.auth.dependencies.get_engine", _get_engine)
-    monkeypatch.setattr("app.auth.dependencies.get_user_role_by_email", _lookup)
+    monkeypatch.setattr("app.auth.dependencies.get_user_info_by_email", _lookup)
 
     with pytest.raises(HTTPException) as exc:
         get_current_user(_credentials())
@@ -109,14 +109,14 @@ def test_get_current_user_success(monkeypatch: pytest.MonkeyPatch) -> None:
         """Return a placeholder engine object."""
         return object()
 
-    def _lookup(_: object, __: str) -> str:
+    def _lookup(_: object, __: str) -> tuple[str, str]:
         """Return a valid role string."""
-        return "OWNER"
+        return ("uid-123", "OWNER")
 
     monkeypatch.setattr("app.auth.dependencies.verify_firebase_token", _verify)
     monkeypatch.setattr("app.auth.dependencies.get_engine", _get_engine)
-    monkeypatch.setattr("app.auth.dependencies.get_user_role_by_email", _lookup)
-
+    monkeypatch.setattr("app.auth.dependencies.get_user_info_by_email", _lookup)
+    
     user = get_current_user(_credentials())
 
     assert user.email == "owner@example.com"

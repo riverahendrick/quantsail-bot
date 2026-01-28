@@ -8,9 +8,19 @@ import { Button } from "@/components/ui/button";
 import { RefreshCw, List } from "lucide-react";
 import { useTranslations } from "next-intl";
 
+type SystemEvent = {
+  id: string;
+  seq: number;
+  ts: string;
+  level: string;
+  type: string;
+  symbol: string | null;
+  payload: Record<string, unknown>;
+};
+
 export default function EventsPage() {
   const t = useTranslations("EventsPage");
-  const [events, setEvents] = useState<any[]>([]);
+  const [events, setEvents] = useState<SystemEvent[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -20,9 +30,10 @@ export default function EventsPage() {
     try {
       const data = await getPrivateEvents();
       // Client-side sort by seq descending just in case
-      setEvents(data.sort((a, b) => b.seq - a.seq));
-    } catch (err: any) {
-      setError(err.message || "Failed to load events");
+      setEvents((data as SystemEvent[]).sort((a, b) => b.seq - a.seq));
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Failed to load events";
+      setError(msg);
     } finally {
       setLoading(false);
     }

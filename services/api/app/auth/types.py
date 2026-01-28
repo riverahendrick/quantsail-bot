@@ -16,3 +16,4 @@ class AuthUser:
     email: str
     firebase_uid: str
     role: Role
+    user_id: str

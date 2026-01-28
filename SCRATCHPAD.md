@@ -71,3 +71,14 @@ Role: Engine Loop & Persistence Engineer
 - Use a deterministic engine loop that emits events per docs/13_ENGINE_SPEC.md and docs/14_EVENT_TAXONOMY.md.
 - Persist with the same Postgres schema as the API (events/trades/orders/equity_snapshots).
 - Use a stub signal provider that can be toggled to emit ENTER_LONG for one tick in tests.
+
+## Prompt 17 - Research Notes (2026-01-28)
+Role: Systems Architect
+
+### References
+- Local UI specs (docs/05_UI_SPEC.md, docs/17_UI_WIREFRAMES_TEXT.md) for private dashboard pages.
+- API spec (docs/03_API_SPEC.md) for owner-only user management endpoints.
+
+### Notes
+- Keep mock auth strictly behind NEXT_PUBLIC_USE_MOCK_DATA for Playwright E2E.
+- Users page must be i18n-only (EN/ES) and use existing API client patterns.
