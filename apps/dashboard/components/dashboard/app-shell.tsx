@@ -9,6 +9,7 @@ import {
   ShieldAlert,
   Settings,
   Activity,
+  Users,
   LogOut,
   Menu,
   X
@@ -27,11 +28,12 @@ export function AppShell({ children }: AppShellProps) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const navItems = [
-    { href: "/overview", label: t("overviewTitle"), icon: LayoutDashboard },
-    { href: "/strategy", label: t("navStrategy"), icon: LineChart },
-    { href: "/risk", label: t("navRisk"), icon: ShieldAlert },
-    { href: "/exchange", label: t("navExchange"), icon: Settings },
-    { href: "/events", label: t("navEvents"), icon: Activity },
+    { href: "/app/overview", label: t("overviewTitle"), icon: LayoutDashboard },
+    { href: "/app/strategy", label: t("navStrategy"), icon: LineChart },
+    { href: "/app/risk", label: t("navRisk"), icon: ShieldAlert },
+    { href: "/app/exchange", label: t("navExchange"), icon: Settings },
+    { href: "/app/events", label: t("navEvents"), icon: Activity },
+    { href: "/app/users", label: t("navUsers"), icon: Users },
   ];
 
   return (
