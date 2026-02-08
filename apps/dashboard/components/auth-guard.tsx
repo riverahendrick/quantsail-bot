@@ -34,22 +34,28 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
         return;
       }
 
+      // If there's already a Firebase user logged in, skip owner setup
+      if (user) {
+        setSystemChecked(true);
+        return;
+      }
+
       try {
         const users = await listUsers();
         if (users.length === 0) {
           setIsOwnerSetup(true);
         }
       } catch {
-        // If API is not available, allow owner setup for development
-        console.log("API not available, allowing owner setup");
-        setIsOwnerSetup(true);
+        // If API is not available, don't force owner setup - let Firebase handle it
+        console.log("API not available, Firebase auth will handle user management");
+        setIsOwnerSetup(false);
       } finally {
         setSystemChecked(true);
       }
     };
 
     checkSystemUsers();
-  }, [systemChecked]);
+  }, [systemChecked, user]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();

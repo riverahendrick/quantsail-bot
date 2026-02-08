@@ -81,6 +81,7 @@ def test_mean_reversion_zero_oversold_threshold() -> None:
         
         # Lower BB > Price -> Price <= Lower BB
         mock_bb.return_value.lower = [110.0] * 30
+        mock_bb.return_value.upper = [120.0] * 30
         # RSI < Threshold (0). Need RSI -1? No, RSI is 0-100.
         # If threshold is 0, RSI needs to be < 0? Impossible.
         # Wait, if RSI < 0 is impossible, signal won't trigger.
@@ -114,7 +115,7 @@ def test_breakout_long_signal() -> None:
     candles.append(make_candle(105, 110, 100))
     
     config = BotConfig(strategies=StrategiesConfig(
-        breakout=BreakoutStrategyConfig(atr_filter_mult=0.0)
+        breakout=BreakoutStrategyConfig(atr_filter_mult=0.001)
     ))
     
     output = strat.analyze("BTC/USDT", candles, MagicMock(), config)
@@ -135,7 +136,7 @@ def test_breakout_zero_atr() -> None:
         mock_atr.return_value = [0.0] * 30
         
         config = BotConfig(strategies=StrategiesConfig(
-            breakout=BreakoutStrategyConfig(atr_filter_mult=0.0)
+            breakout=BreakoutStrategyConfig(atr_filter_mult=0.001)
         ))
         
         output = strat.analyze("BTC/USDT", candles, MagicMock(), config)
@@ -158,7 +159,7 @@ def test_ensemble_combiner_exception_handling() -> None:
     
     # Should run others (HOLD on insufficient data) and catch exception
     # Outputs should include the exception rationale
-    assert len(signal.strategy_outputs) == 4 # 3 real + 1 mock
+    assert len(signal.strategy_outputs) == 5  # 4 real + 1 mock
     error_outputs = [o for o in signal.strategy_outputs if "error" in o.rationale]
     assert len(error_outputs) == 1
     assert error_outputs[0].rationale["error"] == "Boom"

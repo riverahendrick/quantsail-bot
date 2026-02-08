@@ -1,0 +1,6 @@
+Profile        Sym   Trades   W   L    WR%     NetPnL     Equity   MaxDD  OK
+--------------------------------------------------------------------------------
+conservative   BTC    ERROR: 'float' object has no attribute 'replace'
+conservative   ETH        0   0   0   0.0% $    +0.00 $  5000.00   0.00% ❌
+conservative   SOL        0   0   0   0.0% $    +0.00 $  5000.00   0.00% ❌
+conservative   BNB        0   0   0   0.0% $    +0.00 $  5000.00   0.00% ❌

@@ -65,4 +65,4 @@ def test_ensemble_integration_events(in_memory_db: Session) -> None:
     ensemble_event = next(e for e in events if e.type == "ensemble.decision")
     assert "votes" in ensemble_event.payload
     assert "total_strategies" in ensemble_event.payload
-    assert ensemble_event.payload["total_strategies"] == 3
+    assert ensemble_event.payload["total_strategies"] == 4

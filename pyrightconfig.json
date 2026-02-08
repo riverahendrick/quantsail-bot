@@ -1,0 +1,17 @@
+{
+    "pythonVersion": "3.12",
+    "pythonPlatform": "Windows",
+    "extraPaths": [
+        "services/engine",
+        "services/api"
+    ],
+    "exclude": [
+        "**/node_modules",
+        "**/__pycache__",
+        "dashboard",
+        "data"
+    ],
+    "reportMissingImports": "warning",
+    "reportMissingModuleSource": "none",
+    "typeCheckingMode": "basic"
+}

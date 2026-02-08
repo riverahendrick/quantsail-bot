@@ -5,3 +5,16 @@ services/api/.env
 services/engine/.env
 .env
 .env.*
+
+# Python caches and coverage
+__pycache__/
+*.pyc
+*.pyo
+.coverage
+coverage.json
+coverage_report.txt
+*.egg-info/
+
+# Data directories (backtest results, grid state)
+services/data/
+data/

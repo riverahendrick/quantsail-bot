@@ -18,19 +18,19 @@
 ### M2 — Trading logic (dry‑run)
 - [x] Strategy outputs + ensemble gating implemented
 - [x] Fee+slippage profitability gate implemented
-- [ ] Risk sizing + exits implemented
+- [x] Risk sizing + exits implemented (LiveExecutor.check_exits, PortfolioRiskManager, AdaptivePositionSizer)
 - [x] Circuit breakers implemented (news pause stubbed for later)
-- [ ] Daily lock implemented
+- [x] Daily lock implemented (DailyLockManager in gates/daily_lock.py)
 - [x] Dry‑run trades and equity snapshots persisted
 
 ### M3 — Dashboards
-- [ ] Private operator dashboard functional
-- [ ] Public transparency dashboard functional and sanitized
-- [ ] E2E tests for critical pages
+- [x] Private operator dashboard functional (overview, events, exchange, risk, strategy, users)
+- [x] Public transparency dashboard functional and sanitized (overview, trades, transparency)
+- [x] E2E tests for critical pages (4 Playwright specs: arming, private-overview, public-pages, users)
 
 ### M4 — Live (later)
-- [ ] ARM LIVE flow implemented
-- [ ] Binance spot live execution (idempotent) + reconciliation
+- [x] ARM LIVE flow implemented (API endpoints in cache/arming.py, tests in test_arming.py)
+- [x] Binance spot live execution (idempotent) + reconciliation (LiveExecutor, BinanceSpotAdapter)
 
 ## Prompt 00 — Setup (scaffold generators; NO hand-creating boilerplate)
 - Role: Setup & Scaffold Engineer

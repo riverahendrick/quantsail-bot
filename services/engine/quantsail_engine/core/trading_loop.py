@@ -1,6 +1,8 @@
 import logging
 import signal
 from typing import Any
+import uuid
+from datetime import datetime, timezone
 
 from sqlalchemy.orm import Session
 
@@ -13,18 +15,24 @@ from quantsail_engine.breakers.triggers import (
 from quantsail_engine.config.models import BotConfig
 from quantsail_engine.core.state_machine import StateMachine, TradingState
 from quantsail_engine.execution.executor import ExecutionEngine
+from quantsail_engine.gates.cooldown_gate import CooldownGate
 from quantsail_engine.gates.daily_lock import DailyLockManager
+from quantsail_engine.gates.daily_symbol_limit import DailySymbolLossLimit
 from quantsail_engine.gates.estimators import (
     calculate_fee,
     calculate_slippage,
     calculate_spread_cost,
 )
 from quantsail_engine.gates.profitability import ProfitabilityGate
+from quantsail_engine.gates.regime_filter import RegimeFilter
+from quantsail_engine.gates.streak_sizer import StreakSizer
 from quantsail_engine.indicators.atr import calculate_atr
 from quantsail_engine.market_data.provider import MarketDataProvider
 from quantsail_engine.models.signal import SignalType
 from quantsail_engine.models.trade_plan import TradePlan
 from quantsail_engine.persistence.repository import EngineRepository
+from quantsail_engine.risk.dynamic_sizer import DynamicSizer
+from quantsail_engine.risk.trailing_stop import TrailingStopManager
 from quantsail_engine.signals.provider import SignalProvider
 
 logger = logging.getLogger(__name__)
@@ -74,9 +82,24 @@ class TradingLoop:
             repo=self.repo
         )
 
+        # Initialize dynamic position sizer
+        self.dynamic_sizer = DynamicSizer(config.position_sizing)
+
+        # Initialize trailing stop manager
+        self.trailing_stop_manager = TrailingStopManager(config.trailing_stop)
+
+        # Initialize regime filter
+        self.regime_filter = RegimeFilter(config.strategies.regime)
+
+        # New realism gates
+        self.cooldown_gate = CooldownGate(config.cooldown)
+        self.daily_symbol_limit = DailySymbolLossLimit(config.daily_symbol_limit)
+        self.streak_sizer = StreakSizer(config.streak_sizer)
+
         # Initialize per-symbol state machines
         self.state_machines: dict[str, StateMachine] = {}
         self.open_trades: dict[str, str] = {}  # symbol -> trade_id
+        self.trade_plans: dict[str, TradePlan] = {}  # symbol -> active trade plan
 
         for symbol in config.symbols.enabled:
             self.state_machines[symbol] = StateMachine(symbol)
@@ -124,6 +147,46 @@ class TradingLoop:
         if sm.current_state == TradingState.EVAL:
             candles = self.market_data_provider.get_candles(symbol, "5m", 100)
             orderbook = self.market_data_provider.get_orderbook(symbol, 5)
+
+            # Check Market Regime (Gate) — with per-symbol overrides
+            if not self.regime_filter.analyze(candles, symbol=symbol):
+                self.repo.append_event(
+                    event_type="gate.regime.rejected",
+                    level="INFO",
+                    payload={"symbol": symbol, "reason": "choppy_market_detected"},
+                    public_safe=True,
+                )
+                sm.transition_to(TradingState.IDLE)
+                return
+
+            # Check stop-loss cooldown
+            cooldown_ok, cooldown_reason = self.cooldown_gate.is_allowed(
+                symbol, datetime.now(timezone.utc)
+            )
+            if not cooldown_ok:
+                self.repo.append_event(
+                    event_type="gate.cooldown.rejected",
+                    level="INFO",
+                    payload={"symbol": symbol, "reason": cooldown_reason},
+                    public_safe=True,
+                )
+                sm.transition_to(TradingState.IDLE)
+                return
+
+            # Check daily per-symbol loss limit
+            daily_ok, daily_reason = self.daily_symbol_limit.is_allowed(
+                symbol, datetime.now(timezone.utc)
+            )
+            if not daily_ok:
+                self.repo.append_event(
+                    event_type="gate.daily_symbol_limit.rejected",
+                    level="WARN",
+                    payload={"symbol": symbol, "reason": daily_reason},
+                    public_safe=True,
+                )
+                sm.transition_to(TradingState.IDLE)
+                return
+
             signal = self.signal_provider.generate_signal(symbol, candles, orderbook)
             logger.info(f"    State: {sm.current_state.value}, Signal: {signal.signal_type}")
 
@@ -208,9 +271,36 @@ class TradingLoop:
                     sm.transition_to(TradingState.IDLE)
                     return
 
-                # Calculate Trade Plan with Real Estimators
-                quantity = 0.01  # Fixed for now (Risk sizing in Prompt 08/09?)
-                
+                # Calculate ATR for risk-based sizing and SL/TP
+                atr_values = calculate_atr(candles, period=14)
+                current_atr = atr_values[-1] if atr_values else 0.0
+
+                # Dynamic position sizing (replaces hardcoded 0.01)
+                equity_usd = self.repo.calculate_equity(
+                    self.config.risk.starting_cash_usd
+                )
+                entry_est = orderbook.mid_price
+                quantity = self.dynamic_sizer.calculate(
+                    equity_usd=equity_usd,
+                    entry_price=entry_est,
+                    atr_value=current_atr,
+                )
+
+                # Apply streak sizer reduction
+                streak_mult = self.streak_sizer.get_multiplier(symbol)
+                if streak_mult < 1.0:
+                    quantity = quantity * streak_mult
+                    self.repo.append_event(
+                        event_type="gate.streak_sizer.applied",
+                        level="INFO",
+                        payload={
+                            "symbol": symbol,
+                            "multiplier": streak_mult,
+                            "adjusted_quantity": quantity,
+                        },
+                        public_safe=False,
+                    )
+
                 try:
                     avg_fill_price, slippage_usd = calculate_slippage(
                         "BUY", quantity, orderbook
@@ -230,31 +320,40 @@ class TradingLoop:
                     avg_fill_price * quantity, self.config.execution.taker_fee_bps
                 )
                 spread_cost_usd = calculate_spread_cost("BUY", quantity, orderbook)
-                
-                # Entry price for plan is usually the estimated average fill price
+
                 entry_price = avg_fill_price
-                
-                # Simple SL/TP logic (2% / 4% relative to entry)
-                import uuid
-                from datetime import datetime, timezone
-                
+
+                # Config-driven SL/TP (replaces hardcoded 2%/4%)
+                sl_config = self.config.stop_loss
+                tp_config = self.config.take_profit
+
+                if sl_config.method == "atr" and current_atr > 0:
+                    sl_price = entry_price - (current_atr * sl_config.atr_multiplier)
+                else:
+                    sl_price = entry_price * (1.0 - sl_config.fixed_pct / 100.0)
+
+                if tp_config.method == "risk_reward" and sl_price > 0:
+                    sl_distance = entry_price - sl_price
+                    tp_price = entry_price + (sl_distance * tp_config.risk_reward_ratio)
+                elif tp_config.method == "atr" and current_atr > 0:
+                    tp_price = entry_price + (current_atr * tp_config.atr_multiplier)
+                else:
+                    tp_price = entry_price * (1.0 + tp_config.fixed_pct / 100.0)
+
                 plan = TradePlan(
                     symbol=symbol,
                     side="BUY",
                     entry_price=entry_price,
                     quantity=quantity,
-                    stop_loss_price=entry_price * 0.98,
-                    take_profit_price=entry_price * 1.04,
+                    stop_loss_price=sl_price,
+                    take_profit_price=tp_price,
                     estimated_fee_usd=fee_usd,
                     estimated_slippage_usd=slippage_usd,
                     estimated_spread_cost_usd=spread_cost_usd,
-                    trade_id=f"trade-{uuid.uuid4()}",
+                    trade_id=str(uuid.uuid4()),
                     timestamp=datetime.now(timezone.utc),
                 )
-
                 # Check individual breaker triggers AFTER plan creation
-                # Calculate ATR for volatility check
-                atr_values = calculate_atr(candles, period=14)
 
                 # Check volatility spike
                 should_trigger, context = check_volatility_spike(
@@ -307,6 +406,8 @@ class TradingLoop:
                         payload=breakdown,
                         public_safe=False,
                     )
+                    # Store plan for ENTRY_PENDING state
+                    self.trade_plans[symbol] = plan
                     sm.transition_to(TradingState.ENTRY_PENDING)
                 else:
                     net_profit = breakdown['net_profit_usd']
@@ -333,47 +434,62 @@ class TradingLoop:
             # To avoid drift, we should ideally carry the plan over.
             # Note: In a real system, market data changes between ticks/states.
             
-            candles = self.market_data_provider.get_candles(symbol, "5m", 100)
-            orderbook = self.market_data_provider.get_orderbook(symbol, 5)
-            
-            # ... re-calc logic ... (Simplification: using Mid for Entry in dry-run executor?)
-            # DryRunExecutor in Prompt 05 used Mid Price.
-            # We should pass the `plan` to `execute_entry`?
-            # `execute_entry` currently takes `plan`.
-            
-            # Recalculate plan to pass to executor
-            quantity = 0.01
-            try:
-                avg_fill_price, slippage_usd = calculate_slippage(
-                    "BUY", quantity, orderbook
+            # Re-use the plan computed during EVAL (carried via trade_plans dict)
+            plan = self.trade_plans.get(symbol)
+            if not plan:
+                # Fallback: refetch and recompute if plan was lost
+                orderbook = self.market_data_provider.get_orderbook(symbol, 5)
+                candles = self.market_data_provider.get_candles(symbol, "5m", 100)
+                atr_values = calculate_atr(candles, period=14)
+                current_atr = atr_values[-1] if atr_values else 0.0
+                equity_usd = self.repo.calculate_equity(
+                    self.config.risk.starting_cash_usd
                 )
-            except ValueError:
-                sm.reset()
-                return
+                quantity = self.dynamic_sizer.calculate(
+                    equity_usd=equity_usd,
+                    entry_price=orderbook.mid_price,
+                    atr_value=current_atr,
+                )
+                try:
+                    avg_fill_price, slippage_usd = calculate_slippage(
+                        "BUY", quantity, orderbook
+                    )
+                except ValueError:
+                    sm.reset()
+                    return
+                fee_usd = calculate_fee(
+                    avg_fill_price * quantity, self.config.execution.taker_fee_bps
+                )
+                spread_cost_usd = calculate_spread_cost("BUY", quantity, orderbook)
+                entry_price = avg_fill_price
 
-            fee_usd = calculate_fee(
-                avg_fill_price * quantity, self.config.execution.taker_fee_bps
-            )
-            spread_cost_usd = calculate_spread_cost("BUY", quantity, orderbook)
-            entry_price = avg_fill_price
+                sl_config = self.config.stop_loss
+                tp_config = self.config.take_profit
+                if sl_config.method == "atr" and current_atr > 0:
+                    sl_price = entry_price - (current_atr * sl_config.atr_multiplier)
+                else:
+                    sl_price = entry_price * (1.0 - sl_config.fixed_pct / 100.0)
+                if tp_config.method == "risk_reward" and sl_price > 0:
+                    sl_distance = entry_price - sl_price
+                    tp_price = entry_price + (sl_distance * tp_config.risk_reward_ratio)
+                elif tp_config.method == "atr" and current_atr > 0:
+                    tp_price = entry_price + (current_atr * tp_config.atr_multiplier)
+                else:
+                    tp_price = entry_price * (1.0 + tp_config.fixed_pct / 100.0)
 
-            import uuid
-            from datetime import datetime, timezone
-
-            plan = TradePlan(
-                symbol=symbol,
-                side="BUY",
-                entry_price=entry_price,
-                quantity=quantity,
-                stop_loss_price=entry_price * 0.98,
-                take_profit_price=entry_price * 1.04,
-                estimated_fee_usd=fee_usd,
-                estimated_slippage_usd=slippage_usd,
-                estimated_spread_cost_usd=spread_cost_usd,
-                trade_id=f"trade-{uuid.uuid4()}",
-                timestamp=datetime.now(timezone.utc),
-            )
-
+                plan = TradePlan(
+                    symbol=symbol,
+                    side="BUY",
+                    entry_price=entry_price,
+                    quantity=quantity,
+                    stop_loss_price=sl_price,
+                    take_profit_price=tp_price,
+                    estimated_fee_usd=fee_usd,
+                    estimated_slippage_usd=slippage_usd,
+                    estimated_spread_cost_usd=spread_cost_usd,
+                    trade_id=str(uuid.uuid4()),
+                    timestamp=datetime.now(timezone.utc),
+                )
             result = self.execution_engine.execute_entry(plan)
             if not result:
                 self.repo.append_event(
@@ -427,21 +543,59 @@ class TradingLoop:
             # Track open trade
             self.open_trades[symbol] = trade["id"]
 
+            # Initialize trailing stop for this position
+            if self.config.trailing_stop.enabled:
+                self.trailing_stop_manager.init_position(
+                    trade_id=trade["id"],
+                    entry_price=plan.entry_price,
+                    initial_stop=plan.stop_loss_price,
+                )
+
             sm.transition_to(TradingState.IN_POSITION)
 
-        # IN_POSITION: Check for exits
+        # IN_POSITION: Check for exits (with trailing stop)
         if sm.current_state == TradingState.IN_POSITION:
             trade_id = self.open_trades.get(symbol)
             if not trade_id:
-                # Should not happen, but recover
                 sm.reset()
                 return
 
-            # Get current price
+            # Get current price and ATR for trailing stop
             orderbook = self.market_data_provider.get_orderbook(symbol, 5)
             current_price = orderbook.mid_price
 
-            # Check if SL or TP hit
+            # Update trailing stop if enabled
+            if self.config.trailing_stop.enabled:
+                candles = self.market_data_provider.get_candles(symbol, "5m", 100)
+                atr_values = calculate_atr(candles, period=self.config.trailing_stop.atr_period)
+                current_atr = atr_values[-1] if atr_values else 0.0
+
+                new_stop = self.trailing_stop_manager.update(
+                    trade_id=trade_id,
+                    current_price=current_price,
+                    atr_value=current_atr,
+                )
+
+                if new_stop is not None and current_price <= new_stop:
+                    logger.info(
+                        f"    🛑 Trailing stop hit for {symbol} "
+                        f"(stop: ${new_stop:.2f}, price: ${current_price:.2f})"
+                    )
+                    self.repo.append_event(
+                        event_type="trailing_stop.triggered",
+                        level="INFO",
+                        payload={
+                            "symbol": symbol,
+                            "trade_id": trade_id,
+                            "stop_level": new_stop,
+                            "current_price": current_price,
+                        },
+                        public_safe=True,
+                    )
+                    sm.transition_to(TradingState.EXIT_PENDING)
+                    return
+
+            # Check if SL or TP hit (traditional check)
             exit_result = self.execution_engine.check_exits(trade_id, current_price)
 
             if exit_result:
@@ -470,6 +624,20 @@ class TradingLoop:
                 # Save exit order
                 self.repo.save_order(exit_order)
 
+                # Record exit for realism gates
+                pnl = trade.get("realized_pnl_usd", 0.0)
+                exit_ts = datetime.now(timezone.utc)
+                is_win = pnl is not None and pnl > 0
+
+                self.cooldown_gate.record_exit(symbol, exit_reason, exit_ts)
+
+                if is_win:
+                    self.daily_symbol_limit.record_win(symbol, exit_ts)
+                    self.streak_sizer.record_result(symbol, won=True)
+                else:
+                    self.daily_symbol_limit.record_loss(symbol, exit_ts)
+                    self.streak_sizer.record_result(symbol, won=False)
+
                 # Emit events
                 self.repo.append_event(
                     event_type="trade.closed",
@@ -479,7 +647,7 @@ class TradingLoop:
                         "symbol": symbol,
                         "exit_reason": exit_reason,
                         "exit_price": trade["exit_price"],
-                        "pnl_usd": trade.get("realized_pnl_usd"),
+                        "pnl_usd": pnl,
                         "pnl_pct": trade.get("pnl_pct"),
                     },
                     public_safe=True,
@@ -496,8 +664,10 @@ class TradingLoop:
                     public_safe=False,
                 )
 
-                # Remove from open trades
-                del self.open_trades[symbol]
+                # Remove from open trades and clean up
+                trade_id_to_clean = self.open_trades.pop(symbol)
+                self.trade_plans.pop(symbol, None)
+                self.trailing_stop_manager.remove_position(trade_id_to_clean)
 
                 sm.transition_to(TradingState.IDLE)
 

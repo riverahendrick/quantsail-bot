@@ -1,0 +1,19 @@
+{
+    "pythonVersion": "3.12",
+    "pythonPlatform": "Windows",
+    "venvPath": "",
+    "extraPaths": [
+        "."
+    ],
+    "executionEnvironments": [
+        {
+            "root": "scripts",
+            "extraPaths": [
+                ".."
+            ]
+        }
+    ],
+    "reportMissingImports": "none",
+    "reportMissingModuleSource": "none",
+    "typeCheckingMode": "basic"
+}

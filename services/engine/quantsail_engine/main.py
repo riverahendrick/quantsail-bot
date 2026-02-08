@@ -10,6 +10,7 @@ from quantsail_engine.config.loader import load_config
 from quantsail_engine.core.trading_loop import TradingLoop
 from quantsail_engine.execution.dry_run_executor import DryRunExecutor
 from quantsail_engine.market_data.stub_provider import StubMarketDataProvider
+from quantsail_engine.monitoring.sentry_service import SentryConfig, init_sentry, get_sentry
 from quantsail_engine.security.encryption import EncryptionService
 from quantsail_engine.signals.ensemble_provider import EnsembleSignalProvider
 
@@ -29,12 +30,30 @@ def main() -> int:
     """Main entry point for the trading engine."""
     logger.info("🚀 Quantsail Engine starting...")
 
+    # Initialize Sentry (if SENTRY_DSN is configured)
+    sentry_dsn = os.environ.get("SENTRY_DSN", "")
+    if sentry_dsn:
+        sentry_env = os.environ.get("SENTRY_ENVIRONMENT", "development")
+        sentry_config = SentryConfig(
+            dsn=sentry_dsn,
+            environment=sentry_env,
+            traces_sample_rate=0.1,
+        )
+        sentry = init_sentry(sentry_config)
+        logger.info(f"✅ Sentry initialized (env={sentry_env})")
+    else:
+        logger.info("⚠️ Sentry not configured (set SENTRY_DSN to enable)")
+
     # Load configuration
     try:
         config = load_config()
         logger.info(f"✅ Configuration loaded: mode={config.execution.mode}")
     except Exception as e:
         logger.error(f"❌ Failed to load configuration: {e}")
+        sentry = get_sentry()
+        if sentry:
+            sentry.capture_error(e, context={"phase": "config_load"})
+            sentry.flush()
         return 1
 
     # Create database session
@@ -49,6 +68,10 @@ def main() -> int:
         logger.info("✅ Database connected")
     except Exception as e:
         logger.error(f"❌ Database connection failed: {e}")
+        sentry = get_sentry()
+        if sentry:
+            sentry.capture_error(e, context={"phase": "db_connect"})
+            sentry.flush()
         return 1
 
     # Initialize components
@@ -106,8 +129,16 @@ def main() -> int:
         logger.info("⏸️  Shutdown requested by user")
     except Exception as e:
         logger.error(f"❌ Trading loop error: {e}", exc_info=True)
+        sentry = get_sentry()
+        if sentry:
+            sentry.capture_error(e, context={"phase": "trading_loop"})
+            sentry.flush()
         return 1
     finally:
+        # Flush any pending Sentry events
+        sentry = get_sentry()
+        if sentry:
+            sentry.flush()
         session.close()
         logger.info("🛑 Engine stopped")
 

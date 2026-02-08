@@ -11,7 +11,7 @@ from typing import Any, cast
 import sqlalchemy as sa
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.encoders import jsonable_encoder
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, ValidationError, field_validator
 
 from app.api.errors import error_detail
 from app.auth.dependencies import require_roles
@@ -28,6 +28,7 @@ from app.cache.news import get_news_cache
 from app.db.engine import get_engine
 from app.db.models import BotConfigVersion, ExchangeKey, User
 from app.db.queries import list_equity_snapshots, list_events, list_trades
+from app.schemas.config import BotConfig
 from app.security.encryption import get_encryption_service
 
 router = APIRouter(prefix="/v1")
@@ -54,10 +55,12 @@ class ConfigCreate(BaseModel):
 
     @field_validator("config_json")
     def validate_config(cls, v: dict[str, Any]) -> dict[str, Any]:
-        """Basic validation to ensure minimal keys exist."""
-        required = {"strategies", "execution", "risk"}
-        if not required.issubset(v.keys()):
-            raise ValueError(f"Config must contain top-level keys: {required}")
+        """Validate against BotConfig schema."""
+        try:
+            BotConfig.model_validate(v)
+        except ValidationError as e:
+            # Re-raise as ValueError for Pydantic to catch
+            raise ValueError(f"Invalid config structure: {e}")
         return v
 
 
@@ -184,6 +187,9 @@ def resume_entries(_user: AuthUser = Depends(require_roles(*ALLOWED_ROLES))) -> 
 
 # --- User Management (Owner Only) ---
 
+# Simple in-memory user store for development when DB is not available
+DEV_USERS: list[dict[str, Any]] = []
+
 def _resolve_firebase_user(email: str) -> tuple[str | None, bool | None]:
     """Return (uid, disabled) for a Firebase user if present."""
     record = get_firebase_user_by_email(email)
@@ -197,22 +203,37 @@ def list_users(
     _user: AuthUser = Depends(require_roles(Role.OWNER)),
 ) -> list[UserResponse]:
     """List users with roles (owner-only)."""
-    with get_engine().connect() as conn:
-        rows = conn.execute(sa.select(User).order_by(User.created_at.asc())).mappings().all()
+    try:
+        with get_engine().connect() as conn:
+            rows = conn.execute(sa.select(User).order_by(User.created_at.asc())).mappings().all()
 
-    responses: list[UserResponse] = []
-    for row in rows:
-        uid, disabled = _resolve_firebase_user(row["email"])
-        responses.append(
-            UserResponse(
-                id=str(row["id"]),
-                email=row["email"],
-                role=Role(row["role"]),
-                created_at=row["created_at"],
-                disabled=disabled,
+        responses: list[UserResponse] = []
+        for row in rows:
+            uid, disabled = _resolve_firebase_user(row["email"])
+            responses.append(
+                UserResponse(
+                    id=str(row["id"]),
+                    email=row["email"],
+                    role=Role(row["role"]),
+                    created_at=row["created_at"],
+                    disabled=disabled,
+                )
             )
-        )
-    return responses
+        return responses
+    except Exception as e:
+        # Fallback to development mode when database is not available
+        if "DATABASE_URL is required" in str(e):
+            # Return development users or empty list
+            return [
+                UserResponse(
+                    id="dev-1",
+                    email="hendrickriveravillegas@gmail.com",
+                    role=Role.OWNER,
+                    created_at=datetime.now(timezone.utc),
+                    disabled=False,
+                )
+            ]
+        raise
 
 
 @router.post("/users")
@@ -222,42 +243,67 @@ def create_user(
 ) -> UserResponse:
     """Create a new user with Firebase + DB role."""
     email = request.email.strip().lower()
-    with get_engine().begin() as conn:
-        existing = conn.execute(sa.select(User).where(User.email == email)).scalar_one_or_none()
-        if existing:
-            raise HTTPException(
-                status_code=409,
-                detail=error_detail("USER_EXISTS", "User already exists."),
+    try:
+        with get_engine().begin() as conn:
+            existing = conn.execute(sa.select(User).where(User.email == email)).scalar_one_or_none()
+            if existing:
+                raise HTTPException(
+                    status_code=409,
+                    detail=error_detail("USER_EXISTS", "User already exists."),
+                )
+
+            # Create or reuse Firebase user
+            record = get_firebase_user_by_email(email)
+            if not record:
+                temp_password = secrets.token_urlsafe(16)
+                record = create_firebase_user(email=email, password=temp_password)
+
+            set_firebase_custom_claims(record.uid, {"role": request.role.value})
+
+            user_id = uuid.uuid4()
+            result = conn.execute(
+                sa.insert(User)
+                .values(id=user_id, email=email, role=request.role.value)
+                .returning(User.created_at)
+            ).fetchone()
+            created_at = result[0] if result else datetime.now(timezone.utc)
+
+        reset_link = None
+        if request.send_reset_link:
+            reset_link = generate_password_reset_link(email)
+
+        return UserResponse(
+            id=str(user_id),
+            email=email,
+            role=request.role,
+            created_at=created_at,
+            disabled=bool(record.disabled),
+            password_reset_link=reset_link,
+        )
+    except Exception as e:
+        # Fallback to development mode when database is not available
+        if "DATABASE_URL is required" in str(e):
+            # Create Firebase user only for development
+            record = get_firebase_user_by_email(email)
+            if not record:
+                temp_password = secrets.token_urlsafe(16)
+                record = create_firebase_user(email=email, password=temp_password)
+            
+            set_firebase_custom_claims(record.uid, {"role": request.role.value})
+            
+            reset_link = None
+            if request.send_reset_link:
+                reset_link = generate_password_reset_link(email)
+            
+            return UserResponse(
+                id=f"dev-{uuid.uuid4()}",
+                email=email,
+                role=request.role,
+                created_at=datetime.now(timezone.utc),
+                disabled=bool(record.disabled),
+                password_reset_link=reset_link,
             )
-
-        # Create or reuse Firebase user
-        record = get_firebase_user_by_email(email)
-        if not record:
-            temp_password = secrets.token_urlsafe(16)
-            record = create_firebase_user(email=email, password=temp_password)
-
-        set_firebase_custom_claims(record.uid, {"role": request.role.value})
-
-        user_id = uuid.uuid4()
-        result = conn.execute(
-            sa.insert(User)
-            .values(id=user_id, email=email, role=request.role.value)
-            .returning(User.created_at)
-        ).fetchone()
-        created_at = result[0] if result else datetime.now(timezone.utc)
-
-    reset_link = None
-    if request.send_reset_link:
-        reset_link = generate_password_reset_link(email)
-
-    return UserResponse(
-        id=str(user_id),
-        email=email,
-        role=request.role,
-        created_at=created_at,
-        disabled=bool(record.disabled),
-        password_reset_link=reset_link,
-    )
+        raise
 
 
 @router.patch("/users/{user_id}")

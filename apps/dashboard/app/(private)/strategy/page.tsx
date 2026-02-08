@@ -8,6 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Save, RefreshCw, AlertTriangle, CheckCircle2 } from "lucide-react";
 import { useTranslations } from "next-intl";
+import { StrategyPerformanceWidget } from "@/components/dashboard/strategy-performance-widget";
 
 export default function StrategyPage() {
   const t = useTranslations("StrategyPage");
@@ -107,24 +108,24 @@ export default function StrategyPage() {
                   <span className="text-sm">{new Date(config.created_at).toLocaleDateString()}</span>
                 </div>
                 <div className="flex justify-between items-center">
-                   <span className="text-sm font-medium text-muted-foreground">{t("status")}</span>
-                   <div className="flex items-center text-green-500 gap-1">
-                     <CheckCircle2 className="h-4 w-4" />
-                     <span className="text-sm font-bold">{t("active")}</span>
-                   </div>
+                  <span className="text-sm font-medium text-muted-foreground">{t("status")}</span>
+                  <div className="flex items-center text-green-500 gap-1">
+                    <CheckCircle2 className="h-4 w-4" />
+                    <span className="text-sm font-bold">{t("active")}</span>
+                  </div>
                 </div>
               </>
             ) : (
               <div className="text-muted-foreground text-sm">{t("noActiveConfig")}</div>
             )}
-            
+
             <div className="bg-amber-500/10 p-3 rounded-lg border border-amber-500/20">
-               <div className="flex items-start gap-2">
-                 <AlertTriangle className="h-4 w-4 text-yellow-500 mt-0.5" />
-                 <p className="text-xs text-yellow-600 dark:text-yellow-400">
-                   {t("immutableNote")}
-                 </p>
-               </div>
+              <div className="flex items-start gap-2">
+                <AlertTriangle className="h-4 w-4 text-yellow-500 mt-0.5" />
+                <p className="text-xs text-yellow-600 dark:text-yellow-400">
+                  {t("immutableNote")}
+                </p>
+              </div>
             </div>
           </div>
         </GlowCard>
@@ -152,9 +153,9 @@ export default function StrategyPage() {
                 {t("errorPrefix")} {error}
               </div>
             )}
-            
+
             {success && (
-               <div className="p-3 rounded-md bg-green-500/10 border border-green-500/20 text-green-600 dark:text-green-400 text-sm">
+              <div className="p-3 rounded-md bg-green-500/10 border border-green-500/20 text-green-600 dark:text-green-400 text-sm">
                 {success}
               </div>
             )}
@@ -175,6 +176,9 @@ export default function StrategyPage() {
           </div>
         </GlowCard>
       </div>
+
+      {/* Strategy Performance Metrics */}
+      <StrategyPerformanceWidget />
     </div>
   );
 }

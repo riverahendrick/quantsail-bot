@@ -9,6 +9,8 @@ import { Button } from "@/components/ui/button";
 import { ShieldAlert, PauseCircle, PlayCircle, StopCircle, Lock } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { formatCurrency } from "@/lib/utils";
+import { RiskPortfolioWidget } from "@/components/dashboard/risk-portfolio-widget";
+import { KillSwitchWidget } from "@/components/dashboard/kill-switch-widget";
 
 export default function RiskPage() {
     const t = useTranslations("RiskPage");
@@ -65,8 +67,8 @@ export default function RiskPage() {
                         <p className="text-sm text-zinc-400 mt-1">{t("emergencyDesc")}</p>
                     </div>
                     <div className="p-6 space-y-4">
-                        <Button 
-                            variant="destructive" 
+                        <Button
+                            variant="destructive"
                             className="w-full flex items-center justify-center gap-2"
                             onClick={() => handleAction(t("stopBot"), stopBot)}
                             disabled={!!actionLoading}
@@ -74,10 +76,10 @@ export default function RiskPage() {
                             <StopCircle className="h-4 w-4" />
                             {actionLoading === t("stopBot") ? t("stopping") : t("stopBot")}
                         </Button>
-                        
+
                         <div className="grid grid-cols-2 gap-4">
-                            <Button 
-                                variant="outline" 
+                            <Button
+                                variant="outline"
                                 className="border-orange-200 hover:bg-orange-50 dark:border-orange-900 dark:hover:bg-orange-900/20"
                                 onClick={() => handleAction(t("pauseEntries"), pauseEntries)}
                                 disabled={!!actionLoading}
@@ -85,8 +87,8 @@ export default function RiskPage() {
                                 <PauseCircle className="h-4 w-4 mr-2 text-orange-500" />
                                 {t("pauseEntries")}
                             </Button>
-                            <Button 
-                                variant="outline" 
+                            <Button
+                                variant="outline"
                                 className="border-green-200 hover:bg-green-50 dark:border-green-900 dark:hover:bg-green-900/20"
                                 onClick={() => handleAction(t("resumeEntries"), resumeEntries)}
                                 disabled={!!actionLoading}

@@ -3,58 +3,58 @@ import { DASHBOARD_CONFIG } from "./config";
 
 // Mock data responses for development (only used when explicitly enabled)
 function getMockResponse<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
-  // Return empty responses - no mock data
-  const mocks: Record<string, unknown> = {
-    "/v1/users": [],
-    "/v1/events": [],
-    "/v1/exchanges/binance/keys/status": { keys: [] }
-  };
+    // Return empty responses - no mock data
+    const mocks: Record<string, unknown> = {
+        "/v1/users": [],
+        "/v1/events": [],
+        "/v1/exchanges/binance/keys/status": { keys: [] }
+    };
 
-  return Promise.resolve((mocks[endpoint] || {}) as T);
+    return Promise.resolve((mocks[endpoint] || {}) as T);
 }
 
 async function getHeaders() {
-  const user = auth.currentUser;
-  const headers: HeadersInit = { "Content-Type": "application/json" };
-  if (user) {
-    const token = await user.getIdToken();
-    headers["Authorization"] = `Bearer ${token}`;
-  }
-  return headers;
+    const user = auth.currentUser;
+    const headers: HeadersInit = { "Content-Type": "application/json" };
+    if (user) {
+        const token = await user.getIdToken();
+        headers["Authorization"] = `Bearer ${token}`;
+    }
+    return headers;
 }
 
 export async function fetchPrivate<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
-  // If Mock Data is enabled, return mock responses
-  if (DASHBOARD_CONFIG.USE_MOCK_DATA) {
-    return getMockResponse<T>(endpoint, options);
-  }
-  
-  const headers = await getHeaders();
-  const url = `${DASHBOARD_CONFIG.API_URL}${endpoint}`;
-  
-  let res: Response;
-  try {
-    res = await fetch(url, {
-      ...options,
-      headers: { ...headers, ...options.headers },
-    });
-  } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : "Unknown network error";
-    throw new Error(`Network error calling ${url}. Is the API running and reachable? ${message}`);
-  }
+    // If Mock Data is enabled, return mock responses
+    if (DASHBOARD_CONFIG.USE_MOCK_DATA) {
+        return getMockResponse<T>(endpoint, options);
+    }
 
-  if (!res.ok) {
-      const errorText = await res.text();
-      let errorJson;
-      try {
-          errorJson = JSON.parse(errorText);
-      } catch {
-          errorJson = {};
-      }
-      throw new Error(errorJson.detail?.message || errorJson.detail || `API Error ${res.status}: ${errorText}`);
-  }
-  
-  return res.json() as Promise<T>;
+    const headers = await getHeaders();
+    const url = `${DASHBOARD_CONFIG.API_URL}${endpoint}`;
+
+    let res: Response;
+    try {
+        res = await fetch(url, {
+            ...options,
+            headers: { ...headers, ...options.headers },
+        });
+    } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : "Unknown network error";
+        throw new Error(`Network error calling ${url}. Is the API running and reachable? ${message}`);
+    }
+
+    if (!res.ok) {
+        const errorText = await res.text();
+        let errorJson;
+        try {
+            errorJson = JSON.parse(errorText);
+        } catch {
+            errorJson = {};
+        }
+        throw new Error(errorJson.detail?.message || errorJson.detail || `API Error ${res.status}: ${errorText}`);
+    }
+
+    return res.json() as Promise<T>;
 }
 
 // --- Config ---
@@ -207,4 +207,72 @@ export async function resumeEntries() {
 
 export async function getPrivateEvents() {
     return fetchPrivate<unknown[]>("/v1/events");
+}
+
+// --- Strategy Performance ---
+
+export interface StrategyPerformance {
+    name: string;
+    enabled: boolean;
+    total_trades: number;
+    win_rate: number;
+    profit_factor: number;
+    net_pnl_usd: number;
+    avg_trade_usd: number;
+    last_signal_at: string | null;
+}
+
+export async function getStrategyPerformance() {
+    return fetchPrivate<StrategyPerformance[]>("/v1/strategies/performance");
+}
+
+// --- Portfolio Risk ---
+
+export interface PortfolioRisk {
+    total_exposure_usd: number;
+    open_positions: number;
+    max_drawdown_pct: number;
+    current_drawdown_pct: number;
+    daily_pnl_usd: number;
+    daily_pnl_pct: number;
+    var_95_usd: number;
+    risk_level: "LOW" | "MEDIUM" | "HIGH" | "CRITICAL";
+}
+
+export async function getPortfolioRisk() {
+    return fetchPrivate<PortfolioRisk>("/v1/risk/portfolio");
+}
+
+// --- Kill Switch ---
+
+export interface KillSwitchStatus {
+    is_killed: boolean;
+    current_event: {
+        timestamp: string;
+        reason: string;
+        triggered_by: string;
+        details: string;
+        auto_resume_at: string | null;
+    } | null;
+    history_count: number;
+    daily_pnl_pct: number;
+    current_drawdown_pct: number;
+    consecutive_losses: number;
+}
+
+export async function getKillSwitchStatus() {
+    return fetchPrivate<KillSwitchStatus>("/v1/risk/kill-switch/status");
+}
+
+export async function triggerKillSwitch(reason: string) {
+    return fetchPrivate("/v1/risk/kill-switch/trigger", {
+        method: "POST",
+        body: JSON.stringify({ reason }),
+    });
+}
+
+export async function resumeTrading() {
+    return fetchPrivate("/v1/risk/kill-switch/resume", {
+        method: "POST",
+    });
 }

@@ -1,0 +1,136 @@
+
+=== aggressive / BTC === 10 trades ===
+  Win rate: 30.0% | Net PnL: $-1.90
+  SL config: ATR mult=2.5
+  TP config: R:R=2.0
+  Trailing: activation=0.3%
+  PnL=$-0.2310 entry=89776.31 exit=89170.60
+  PnL=$-0.5498 entry=89688.34 exit=89419.34
+  PnL=$-0.2620 entry=90243.05 exit=89522.18
+  PnL=$-0.5481 entry=88935.00 exit=88669.74
+  PnL=$+0.2257 entry=87655.32 exit=88667.01
+  PnL=$-0.3349 entry=88394.85 exit=88023.42
+  PnL=$+0.2330 entry=87675.23 exit=88712.58
+  PnL=$+0.1656 entry=89101.41 exit=89915.16
+  PnL=$-0.1859 entry=90125.04 exit=89679.70
+  PnL=$-0.2023 entry=89651.28 exit=89149.59
+  Exit reasons: {}
+  Avg win: $0.2081 (3 trades)
+  Avg loss: $-0.3306 (7 trades)
+  Actual R:R achieved: 0.63
+
+=== aggressive / ETH === 12 trades ===
+  Win rate: 27.3% | Net PnL: $-1.45
+  SL config: ATR mult=2.5
+  TP config: R:R=2.0
+  Trailing: activation=0.3%
+  PnL=$-0.3330 entry=2940.51 exit=2908.67
+  PnL=$-0.3604 entry=2960.74 exit=2925.43
+  PnL=$+0.3203 entry=2856.76 exit=2900.54
+  PnL=$-0.2281 entry=2905.77 exit=2886.50
+  PnL=$+0.1812 entry=2887.28 exit=2915.46
+  PnL=$-0.3489 entry=2946.38 exit=2912.59
+  PnL=$-0.1903 entry=2953.72 exit=2938.61
+  PnL=$-0.1716 entry=2929.40 exit=2916.61
+  PnL=$-0.2105 entry=2931.72 exit=2914.34
+  PnL=$-0.3080 entry=2967.78 exit=2938.61
+  PnL=$+0.4472 entry=2940.50 exit=3000.51
+  Exit reasons: {}
+  Avg win: $0.3162 (3 trades)
+  Avg loss: $-0.2689 (8 trades)
+  Actual R:R achieved: 1.18
+
+=== aggressive / SOL === 8 trades ===
+  Win rate: 25.0% | Net PnL: $-1.40
+  SL config: ATR mult=2.5
+  TP config: R:R=2.0
+  Trailing: activation=0.3%
+  PnL=$-0.3271 entry=128.66 exit=127.30
+  PnL=$-0.3088 entry=127.86 exit=127.39
+  PnL=$-0.5422 entry=127.51 exit=127.14
+  PnL=$+0.4148 entry=122.46 exit=124.80
+  PnL=$-0.3253 entry=124.72 exit=123.41
+  PnL=$-0.3015 entry=125.96 exit=124.76
+  PnL=$+0.3521 entry=125.87 exit=127.96
+  PnL=$-0.2150 entry=128.23 exit=127.45
+  Exit reasons: {}
+  Avg win: $0.3835 (2 trades)
+  Avg loss: $-0.3366 (6 trades)
+  Actual R:R achieved: 1.14
+
+=== aggressive / BNB === 16 trades ===
+  Win rate: 37.5% | Net PnL: $-2.80
+  SL config: ATR mult=2.5
+  TP config: R:R=2.0
+  Trailing: activation=0.3%
+  PnL=$-0.3099 entry=895.56 exit=892.24
+  PnL=$-0.2910 entry=890.50 exit=887.54
+  PnL=$-0.2226 entry=894.25 exit=888.52
+  PnL=$+0.2022 entry=859.64 exit=868.75
+  PnL=$+0.1082 entry=868.83 exit=874.77
+  PnL=$+0.1385 entry=871.41 exit=876.00
+  PnL=$-0.3176 entry=881.04 exit=877.64
+  PnL=$+0.0814 entry=881.68 exit=885.32
+  PnL=$-0.2986 entry=885.85 exit=882.78
+  PnL=$-0.5670 entry=882.95 exit=880.15
+  PnL=$-0.5492 entry=883.31 exit=880.67
+  PnL=$-0.2172 entry=895.96 exit=890.41
+  PnL=$+0.2115 entry=888.54 exit=898.29
+  PnL=$-0.1751 entry=900.22 exit=896.16
+  PnL=$+0.0757 entry=896.26 exit=901.22
+  PnL=$-0.3055 entry=904.83 exit=901.56
+  Exit reasons: {}
+  Avg win: $0.1362 (6 trades)
+  Avg loss: $-0.3254 (10 trades)
+  Actual R:R achieved: 0.42
+
+=== conservative / BTC === 3 trades ===
+  Win rate: 0.0% | Net PnL: $-0.71
+  SL config: ATR mult=2.5
+  TP config: R:R=2.0
+  Trailing: activation=0.75%
+  PnL=$-0.2574 entry=91027.48 exit=90317.18
+  PnL=$-0.2345 entry=89460.71 exit=88844.83
+  PnL=$-0.1803 entry=90089.02 exit=89664.25
+  Exit reasons: {}
+  Avg win: $0.0000 (0 trades)
+  Avg loss: $-0.2241 (3 trades)
+  Actual R:R achieved: 0.00
+
+=== conservative / ETH === 3 trades ===
+  Win rate: 0.0% | Net PnL: $-0.80
+  SL config: ATR mult=2.5
+  TP config: R:R=2.0
+  Trailing: activation=0.75%
+  PnL=$-0.3270 entry=3000.14 exit=2968.37
+  PnL=$-0.2246 entry=2909.23 exit=2890.35
+  PnL=$-0.2123 entry=3032.22 exit=3014.04
+  Exit reasons: {}
+  Avg win: $0.0000 (0 trades)
+  Avg loss: $-0.2546 (3 trades)
+  Actual R:R achieved: 0.00
+
+=== conservative / SOL === 2 trades ===
+  Win rate: 0.0% | Net PnL: $-0.69
+  SL config: ATR mult=2.5
+  TP config: R:R=2.0
+  Trailing: activation=0.75%
+  PnL=$-0.3405 entry=129.88 exit=128.44
+  PnL=$-0.3200 entry=124.97 exit=123.68
+  Exit reasons: {}
+  Avg win: $0.0000 (0 trades)
+  Avg loss: $-0.3302 (2 trades)
+  Actual R:R achieved: 0.00
+
+=== conservative / BNB === 3 trades ===
+  Win rate: 0.0% | Net PnL: $-0.90
+  SL config: ATR mult=2.5
+  TP config: R:R=2.0
+  Trailing: activation=0.75%
+  PnL=$-0.2215 entry=902.39 exit=896.65
+  PnL=$-0.3060 entry=887.52 exit=884.31
+  PnL=$-0.3055 entry=904.83 exit=901.56
+  Exit reasons: {}
+  Avg win: $0.0000 (0 trades)
+  Avg loss: $-0.2777 (3 trades)
+  Actual R:R achieved: 0.00

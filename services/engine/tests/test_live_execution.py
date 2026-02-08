@@ -2,7 +2,7 @@
 
 from unittest.mock import MagicMock, patch
 import pytest
-from datetime import datetime
+from datetime import datetime, timezone
 
 from quantsail_engine.execution.live_executor import LiveExecutor
 from quantsail_engine.models.trade_plan import TradePlan
@@ -40,7 +40,7 @@ def test_execute_entry_success(executor, mock_repo, mock_adapter):
         estimated_slippage_usd=0.5,
         estimated_spread_cost_usd=0.5,
         trade_id="uuid-123",
-        timestamp=datetime.utcnow()
+        timestamp=datetime.now(timezone.utc)
     )
 
     # Mock exchange response
@@ -81,7 +81,7 @@ def test_execute_entry_idempotency_hit(executor, mock_repo, mock_adapter):
         estimated_slippage_usd=0.5,
         estimated_spread_cost_usd=0.5,
         trade_id="uuid-123",
-        timestamp=datetime.utcnow()
+        timestamp=datetime.now(timezone.utc)
     )
 
     # Simulate trade already exists
@@ -116,7 +116,7 @@ def test_execute_entry_failure(executor, mock_repo, mock_adapter):
         estimated_slippage_usd=0.5,
         estimated_spread_cost_usd=0.5,
         trade_id="uuid-123",
-        timestamp=datetime.utcnow()
+        timestamp=datetime.now(timezone.utc)
     )
 
     # Mock failure

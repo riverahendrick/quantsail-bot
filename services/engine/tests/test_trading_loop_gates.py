@@ -25,7 +25,7 @@ def test_integration_profitability_gate_rejects(in_memory_db: Session) -> None:
     config = BotConfig(
         execution=ExecutionConfig(min_profit_usd=1000.0, taker_fee_bps=10.0),
         strategies=StrategiesConfig(
-            ensemble=EnsembleConfig(min_agreement=0, confidence_threshold=0.0)
+            ensemble=EnsembleConfig(min_agreement=1, confidence_threshold=0.0)
         )
     )
     

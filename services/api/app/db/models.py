@@ -24,7 +24,10 @@ class User(Base):
     email: Mapped[str] = mapped_column(sa.Text(), nullable=False)
     role: Mapped[str] = mapped_column(sa.Text(), nullable=False)
     created_at: Mapped[dt.datetime] = mapped_column(
-        sa.DateTime(timezone=True), server_default=sa.text("now()"), nullable=False
+        sa.DateTime(timezone=True),
+        server_default=sa.text("now()"),
+        default=lambda: dt.datetime.now(dt.timezone.utc),
+        nullable=False,
     )
 
 
@@ -43,7 +46,10 @@ class ExchangeKey(Base):
         UUID(as_uuid=True), sa.ForeignKey("users.id"), nullable=True
     )
     created_at: Mapped[dt.datetime] = mapped_column(
-        sa.DateTime(timezone=True), server_default=sa.text("now()"), nullable=False
+        sa.DateTime(timezone=True),
+        server_default=sa.text("now()"),
+        default=lambda: dt.datetime.now(dt.timezone.utc),
+        nullable=False,
     )
     is_active: Mapped[bool] = mapped_column(
         sa.Boolean(), server_default=sa.text("true"), nullable=False
@@ -73,7 +79,10 @@ class BotConfigVersion(Base):
         UUID(as_uuid=True), sa.ForeignKey("users.id"), nullable=True
     )
     created_at: Mapped[dt.datetime] = mapped_column(
-        sa.DateTime(timezone=True), server_default=sa.text("now()"), nullable=False
+        sa.DateTime(timezone=True),
+        server_default=sa.text("now()"),
+        default=lambda: dt.datetime.now(dt.timezone.utc),
+        nullable=False,
     )
     activated_at: Mapped[dt.datetime | None] = mapped_column(
         sa.DateTime(timezone=True), nullable=True
@@ -102,8 +111,8 @@ class Trade(Base):
     entry_qty: Mapped[Decimal] = mapped_column(NUMERIC_24_10, nullable=False)
     entry_notional_usd: Mapped[Decimal] = mapped_column(NUMERIC_24_10, nullable=False)
 
-    stop_price: Mapped[Decimal] = mapped_column(NUMERIC_24_10, nullable=False)
-    take_profit_price: Mapped[Decimal] = mapped_column(NUMERIC_24_10, nullable=False)
+    stop_price: Mapped[Decimal | None] = mapped_column(NUMERIC_24_10, nullable=True)
+    take_profit_price: Mapped[Decimal | None] = mapped_column(NUMERIC_24_10, nullable=True)
     trailing_enabled: Mapped[bool] = mapped_column(
         sa.Boolean(), server_default=sa.text("false"), nullable=False
     )
@@ -140,10 +149,16 @@ class Order(Base):
     idempotency_key: Mapped[str | None] = mapped_column(sa.Text(), nullable=True)
     filled_at: Mapped[dt.datetime | None] = mapped_column(sa.DateTime(timezone=True), nullable=True)
     created_at: Mapped[dt.datetime] = mapped_column(
-        sa.DateTime(timezone=True), server_default=sa.text("now()"), nullable=False
+        sa.DateTime(timezone=True),
+        server_default=sa.text("now()"),
+        default=lambda: dt.datetime.now(dt.timezone.utc),
+        nullable=False,
     )
     updated_at: Mapped[dt.datetime] = mapped_column(
-        sa.DateTime(timezone=True), server_default=sa.text("now()"), nullable=False
+        sa.DateTime(timezone=True),
+        server_default=sa.text("now()"),
+        default=lambda: dt.datetime.now(dt.timezone.utc),
+        nullable=False,
     )
 
 

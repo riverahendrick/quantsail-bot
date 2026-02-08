@@ -1,0 +1,2 @@
+Profile        Sym    Trades  Win Loss   Win%     NetPnL    EndEquity   MaxDD
+--------------------------------------------------------------------------------

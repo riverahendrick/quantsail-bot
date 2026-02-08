@@ -49,14 +49,27 @@ class MeanReversionStrategy:
         signal = SignalType.HOLD
         confidence = 0.0
 
+        current_upper_bb = bb.upper[-1]
+
         if current_price <= current_lower_bb and current_rsi < mr_config.rsi_oversold:
             signal = SignalType.ENTER_LONG
-            # Confidence increases as RSI drops below threshold
-            # 0 if RSI = threshold, 1 if RSI = 0
-            if mr_config.rsi_oversold > 0:
-                confidence = (mr_config.rsi_oversold - current_rsi) / mr_config.rsi_oversold
+
+            # Professional confidence: blend RSI depth + BB penetration depth
+            # RSI component: how far below oversold (0-1 scale, capped)
+            rsi_depth = min(
+                (mr_config.rsi_oversold - current_rsi) / max(mr_config.rsi_oversold, 1.0),
+                1.0,
+            )
+
+            # BB component: how far below lower band relative to band width
+            band_width = current_upper_bb - current_lower_bb
+            if band_width > 0 and current_price < current_lower_bb:
+                bb_depth = min((current_lower_bb - current_price) / band_width, 1.0)
             else:
-                confidence = 1.0
+                bb_depth = 0.0
+
+            # Weighted blend with floor of 0.5 (conditions already met = base confidence)
+            confidence = max(0.5, rsi_depth * 0.6 + bb_depth * 0.4)
 
         return StrategyOutput(
             signal=signal,

@@ -115,29 +115,21 @@ class EngineRepository:
             "mode": trade.mode,
             "status": trade.status,
             "side": trade.side,
-            "entry_price": trade.entry_price,
-            "quantity": trade.entry_qty,
+            "entry_price": float(trade.entry_price),
+            "quantity": float(trade.entry_qty),
             "opened_at": trade.opened_at,
-            "stop_price": trade.stop_price,
-            "take_profit_price": trade.take_profit_price,
+            "stop_price": float(trade.stop_price) if trade.stop_price is not None else None,
+            "take_profit_price": float(trade.take_profit_price) if trade.take_profit_price is not None else None,
             "trailing_enabled": trade.trailing_enabled,
-            "trailing_offset": trade.trailing_offset,
+            "trailing_offset": float(trade.trailing_offset) if trade.trailing_offset is not None else None,
             "closed_at": trade.closed_at,
-            "exit_price": trade.exit_price,
-            "realized_pnl_usd": trade.realized_pnl_usd,
+            "exit_price": float(trade.exit_price) if trade.exit_price is not None else None,
+            "realized_pnl_usd": float(trade.realized_pnl_usd) if trade.realized_pnl_usd is not None else None,
             "pnl_pct": 0.0, # Placeholder
         }
 
     def save_order(self, order_data: dict[str, Any]) -> str:
-        """
-        Save a new order to the database.
-
-        Args:
-            order_data: Order data dictionary
-
-        Returns:
-            Order ID
-        """
+        """Save order to database."""
         order = Order(
             id=uuid.UUID(str(order_data["id"])),
             trade_id=uuid.UUID(str(order_data["trade_id"])),
@@ -186,13 +178,21 @@ class EngineRepository:
         # Ensure payload is JSON serializable
         safe_payload = json.loads(json.dumps(payload, default=_json_serial))
 
-        event = Event(
-            type=event_type,
-            level=level,
-            payload=safe_payload,
-            public_safe=public_safe,
-            ts=datetime.now(timezone.utc),
-        )
+        # Handle SQLite sequence generation manually (no Identity support)
+        event_kwargs = {
+            "type": event_type,
+            "level": level,
+            "payload": safe_payload,
+            "public_safe": public_safe,
+            "ts": datetime.now(timezone.utc),
+        }
+
+        if self.session.bind.dialect.name == "sqlite":
+            import sqlalchemy as sa
+            max_seq = self.session.query(sa.func.max(Event.seq)).scalar() or 0
+            event_kwargs["seq"] = max_seq + 1
+
+        event = Event(**event_kwargs)
         self.session.add(event)
         self.session.commit()
         self.session.refresh(event)
@@ -284,7 +284,7 @@ class EngineRepository:
             {
                 "id": str(trade.id),
                 "symbol": trade.symbol,
-                "realized_pnl_usd": trade.realized_pnl_usd,
+                "realized_pnl_usd": float(trade.realized_pnl_usd) if trade.realized_pnl_usd is not None else 0.0,
                 "pnl_pct": 0.0, # Placeholder
                 "closed_at": trade.closed_at,
             }

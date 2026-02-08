@@ -1,0 +1,14 @@
+{
+  "site_package_search_strategy": "pep561",
+  "search_path": [
+    "."
+  ],
+  "source_directories": [
+    "."
+  ],
+  "exclude": [
+    ".*/\\.venv/.*",
+    ".*/__pycache__/.*",
+    ".*/data/.*"
+  ]
+}
