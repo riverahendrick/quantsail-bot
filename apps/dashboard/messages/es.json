@@ -131,6 +131,7 @@
     "lastHeartbeat": "Último latido",
     "navStrategy": "Estrategia",
     "navRisk": "Riesgo",
+    "navGrid": "Portafolio Grid",
     "navExchange": "Intercambio",
     "navEvents": "Eventos",
     "navUsers": "Usuarios",
@@ -426,5 +427,28 @@
     "loadError": "No se pudo cargar la configuración.",
     "saveError": "No se pudo guardar la configuración.",
     "saveSuccess": "¡Versión {version} creada y activada!"
+  },
+  "GridPage": {
+    "title": "Portafolio Grid",
+    "subtitle": "Monitorea niveles de grid, ejecuciones y P&L en todas las monedas",
+    "inactive": "Grid no activo. Inicie el motor para comenzar a operar.",
+    "loadError": "Error al cargar datos del grid",
+    "summaryTitle": "Resumen del Portafolio",
+    "capital": "Capital",
+    "buys": "Compras",
+    "sells": "Ventas",
+    "pnl": "P&L Neto",
+    "fees": "Comisiones",
+    "since": "Desde",
+    "coinTitle": "Detalles por Moneda",
+    "allocation": "Asignación",
+    "center": "Centro del Grid",
+    "levels": "Niveles",
+    "range": "Rango",
+    "orders": "Órdenes Activas",
+    "filled": "Ejecutadas",
+    "rebalances": "Rebalanceos",
+    "lastUpdate": "Última Actualización",
+    "refresh": "Actualizar"
   }
 }

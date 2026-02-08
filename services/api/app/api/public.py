@@ -115,3 +115,14 @@ def events(limit: int | None = Query(None, ge=1, le=500)) -> list[dict[str, obje
 def heartbeat() -> dict[str, object]:
     """Return a lightweight public heartbeat payload."""
     return {"ok": True, "ts": datetime.now(timezone.utc).isoformat()}
+
+
+@router.get("/grid/performance")
+def grid_performance() -> dict[str, object]:
+    """Return sanitized grid trading performance for public dashboard.
+
+    No API keys, no exact positions, no order IDs exposed.
+    """
+    from app.api.grid_data import get_public_grid_performance
+
+    return cast(dict[str, object], jsonable_encoder(get_public_grid_performance()))

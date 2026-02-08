@@ -15,6 +15,7 @@ import {
   X,
   Bot,
   ChevronRight,
+  Grid3x3,
 } from "lucide-react";
 import { useState } from "react";
 import { useTranslations } from "next-intl";
@@ -33,6 +34,7 @@ export function AppShell({ children }: AppShellProps) {
     { href: "/app/overview", label: t("overviewTitle"), icon: LayoutDashboard },
     { href: "/app/strategy", label: t("navStrategy"), icon: LineChart },
     { href: "/app/risk", label: t("navRisk"), icon: ShieldAlert },
+    { href: "/app/grid", label: t("navGrid"), icon: Grid3x3 },
     { href: "/app/exchange", label: t("navExchange"), icon: Settings },
     { href: "/app/events", label: t("navEvents"), icon: Activity },
     { href: "/app/users", label: t("navUsers"), icon: Users },

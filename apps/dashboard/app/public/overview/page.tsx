@@ -7,50 +7,64 @@ import { EquityChart } from "@/components/dashboard/equity-chart";
 import { useTranslations } from "next-intl";
 import { DASHBOARD_CONFIG } from "@/lib/config";
 import { NeoCard, NeoStatusCard } from "@/components/ui/neo-card";
-import { 
-  Activity, 
-  Globe, 
-  Shield, 
-  Zap, 
+import { getPublicGridPerformance, PublicGridPerformance } from "@/lib/api";
+import { formatCurrency } from "@/lib/utils";
+import {
+  Activity,
+  Globe,
+  Shield,
+  Zap,
   TrendingUp,
   Clock,
   Lock,
   ArrowRight,
-  Sparkles
+  Sparkles,
+  Grid3x3,
 } from "lucide-react";
 import Link from "next/link";
 
 export default function PublicOverviewPage() {
   const [summary, setSummary] = useState<PublicSummary | null>(null);
+  const [gridPerf, setGridPerf] = useState<PublicGridPerformance | null>(null);
   const t = useTranslations("PublicOverview");
 
   useEffect(() => {
     const fetchSummary = async () => {
-       try {
-         const res = await fetch(`${DASHBOARD_CONFIG.API_URL}/public/v1/summary`);
-         if (res.ok) {
-            const data = await res.json();
-            setSummary(data);
-         } else if (DASHBOARD_CONFIG.USE_MOCK_DATA) {
-            throw new Error("Mock fallback");
-         }
-       } catch (e) {
-         if (DASHBOARD_CONFIG.USE_MOCK_DATA) {
-             setSummary({
-                ts: new Date().toISOString(),
-                equity_usd: 10250.50,
-                cash_usd: 5000,
-                unrealized_pnl_usd: 150.20,
-                realized_pnl_today_usd: 45.30,
-                open_positions: 1
-             });
-         } else {
-             console.error("Failed to fetch public summary", e);
-         }
-       }
+      try {
+        const res = await fetch(`${DASHBOARD_CONFIG.API_URL}/public/v1/summary`);
+        if (res.ok) {
+          const data = await res.json();
+          setSummary(data);
+        } else if (DASHBOARD_CONFIG.USE_MOCK_DATA) {
+          throw new Error("Mock fallback");
+        }
+      } catch (e) {
+        if (DASHBOARD_CONFIG.USE_MOCK_DATA) {
+          setSummary({
+            ts: new Date().toISOString(),
+            equity_usd: 10250.50,
+            cash_usd: 5000,
+            unrealized_pnl_usd: 150.20,
+            realized_pnl_today_usd: 45.30,
+            open_positions: 1
+          });
+        } else {
+          console.error("Failed to fetch public summary", e);
+        }
+      }
     };
-    
+
+    const fetchGrid = async () => {
+      try {
+        const data = await getPublicGridPerformance();
+        setGridPerf(data);
+      } catch {
+        // Grid data is optional
+      }
+    };
+
     fetchSummary();
+    fetchGrid();
   }, []);
 
   return (
@@ -60,7 +74,7 @@ export default function PublicOverviewPage() {
         <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-6">
           <div className="space-y-4">
             <div className="flex items-center gap-3">
-              <div className="p-2 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-600 shadow-lg shadow-cyan-500/20">
+              <div className="p-2 rounded-xl bg-linear-to-br from-cyan-500 to-blue-600 shadow-lg shadow-cyan-500/20">
                 <Sparkles className="w-6 h-6 text-white" />
               </div>
               <h1 className="text-4xl md:text-5xl font-bold tracking-tight text-white">
@@ -71,7 +85,7 @@ export default function PublicOverviewPage() {
               {t("subtitle")}
             </p>
           </div>
-          
+
           {/* Trust Badges */}
           <div className="flex flex-wrap items-center gap-3">
             <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20">
@@ -95,9 +109,9 @@ export default function PublicOverviewPage() {
 
       {/* Status Section */}
       <div className="grid md:grid-cols-3 gap-4 animate-fade-in-up" style={{ animationDelay: "0.1s", opacity: 0 }}>
-        <NeoStatusCard 
-          title={t("botStatus")} 
-          status="online" 
+        <NeoStatusCard
+          title={t("botStatus")}
+          status="online"
           message={t("automatedTrading")}
         />
         <NeoCard variant="primary" className="p-5">
@@ -130,7 +144,53 @@ export default function PublicOverviewPage() {
       <div className="animate-fade-in-up" style={{ animationDelay: "0.2s", opacity: 0 }}>
         <PublicKPIs summary={summary} />
       </div>
-      
+
+      {/* Grid Performance Section */}
+      {gridPerf && gridPerf.active && (
+        <div className="animate-fade-in-up" style={{ animationDelay: "0.25s", opacity: 0 }}>
+          <NeoCard variant="glow">
+            <div className="p-6">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="p-2 rounded-lg bg-cyan-500/20">
+                  <Grid3x3 className="w-5 h-5 text-cyan-400" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold text-white">{gridPerf.strategy}</h3>
+                  <p className="text-xs text-zinc-500">Live grid trading performance</p>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="p-3 rounded-xl bg-white/5">
+                  <p className="text-xs text-zinc-500">Coins Traded</p>
+                  <p className="text-lg font-semibold text-white">{gridPerf.coins_traded}</p>
+                </div>
+                <div className="p-3 rounded-xl bg-white/5">
+                  <p className="text-xs text-zinc-500">Total Fills</p>
+                  <p className="text-lg font-semibold text-white">{gridPerf.total_fills}</p>
+                </div>
+                <div className="p-3 rounded-xl bg-white/5">
+                  <p className="text-xs text-zinc-500">Daily Return</p>
+                  <p className={`text-lg font-semibold ${gridPerf.daily_return_pct >= 0 ? "text-green-400" : "text-red-400"}`}>
+                    {gridPerf.daily_return_pct >= 0 ? "+" : ""}{gridPerf.daily_return_pct}%
+                  </p>
+                </div>
+                <div className="p-3 rounded-xl bg-white/5">
+                  <p className="text-xs text-zinc-500">Total P&L</p>
+                  <p className={`text-lg font-semibold ${gridPerf.total_pnl_usd >= 0 ? "text-green-400" : "text-red-400"}`}>
+                    {formatCurrency(gridPerf.total_pnl_usd)}
+                  </p>
+                </div>
+              </div>
+              {gridPerf.last_updated && (
+                <p className="text-xs text-zinc-600 mt-3 text-right">
+                  Last updated: {new Date(gridPerf.last_updated).toLocaleTimeString()}
+                </p>
+              )}
+            </div>
+          </NeoCard>
+        </div>
+      )}
+
       {/* Chart Section */}
       <div className="animate-fade-in-up" style={{ animationDelay: "0.3s", opacity: 0 }}>
         <EquityChart />
@@ -161,7 +221,7 @@ export default function PublicOverviewPage() {
                     {t("realTimeUpdates")}
                   </span>
                 </div>
-                <Link 
+                <Link
                   href="/public/transparency"
                   className="inline-flex items-center gap-2 text-sm text-cyan-400 hover:text-cyan-300 transition-colors"
                 >
@@ -206,9 +266,9 @@ export default function PublicOverviewPage() {
         <NeoCard variant="glow" className="inline-block">
           <div className="px-8 py-6">
             <p className="text-zinc-400 mb-4">{t("ctaText")}</p>
-            <Link 
+            <Link
               href="/public/trades"
-              className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 text-white font-medium hover:shadow-lg hover:shadow-cyan-500/25 transition-all"
+              className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-linear-to-r from-cyan-500 to-blue-600 text-white font-medium hover:shadow-lg hover:shadow-cyan-500/25 transition-all"
             >
               {t("viewTrades")}
               <ArrowRight className="w-4 h-4" />

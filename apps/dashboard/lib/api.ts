@@ -276,3 +276,77 @@ export async function resumeTrading() {
         method: "POST",
     });
 }
+
+// --- Grid Portfolio ---
+
+export interface GridCoinSummary {
+    symbol: string;
+    pair: string;
+    allocation_usd: number;
+    cash: number;
+    grid_center: number;
+    num_grids: number;
+    lower_pct: number;
+    upper_pct: number;
+    total_buys: number;
+    total_sells: number;
+    total_pnl: number;
+    total_fees: number;
+    net_pnl: number;
+    active_orders: number;
+    filled_levels: number;
+    total_levels: number;
+    num_rebalances: number;
+    last_updated: string | null;
+}
+
+export interface GridPortfolio {
+    active: boolean;
+    started_at: string | null;
+    total_capital_usd: number;
+    coins: GridCoinSummary[];
+    summary: {
+        total_buys: number;
+        total_sells: number;
+        total_pnl: number;
+        total_fees: number;
+        net_pnl: number;
+    };
+}
+
+export interface GridCoinDetail extends GridCoinSummary {
+    levels: {
+        price: number;
+        sell_price: number;
+        holding: number;
+        order_id: string | null;
+        side: string;
+    }[];
+}
+
+export async function getGridPortfolio() {
+    return fetchPrivate<GridPortfolio>("/v1/grid/portfolio");
+}
+
+export async function getGridCoinDetail(symbol: string) {
+    return fetchPrivate<GridCoinDetail>(`/v1/grid/${symbol.toUpperCase()}`);
+}
+
+// --- Public API ---
+
+export interface PublicGridPerformance {
+    active: boolean;
+    coins_traded: number;
+    total_fills: number;
+    daily_return_pct: number;
+    total_pnl_usd: number;
+    strategy: string;
+    last_updated: string | null;
+}
+
+export async function getPublicGridPerformance(): Promise<PublicGridPerformance> {
+    const url = `${DASHBOARD_CONFIG.API_URL}/public/v1/grid/performance`;
+    const res = await fetch(url);
+    if (!res.ok) throw new Error("Failed to fetch grid performance");
+    return res.json();
+}

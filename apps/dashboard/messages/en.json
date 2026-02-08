@@ -131,6 +131,7 @@
     "lastHeartbeat": "Last heartbeat",
     "navStrategy": "Strategy",
     "navRisk": "Risk",
+    "navGrid": "Grid Portfolio",
     "navExchange": "Exchange",
     "navEvents": "Events",
     "navUsers": "Users",
@@ -426,5 +427,28 @@
     "loadError": "Failed to load config.",
     "saveError": "Failed to save config.",
     "saveSuccess": "Version {version} created and activated!"
+  },
+  "GridPage": {
+    "title": "Grid Portfolio",
+    "subtitle": "Monitor grid trading levels, fills, and P&L across all coins",
+    "inactive": "Grid not active. Start the engine to begin trading.",
+    "loadError": "Failed to load grid data",
+    "summaryTitle": "Portfolio Summary",
+    "capital": "Capital",
+    "buys": "Buys",
+    "sells": "Sells",
+    "pnl": "Net P&L",
+    "fees": "Fees",
+    "since": "Since",
+    "coinTitle": "Coin Grid Details",
+    "allocation": "Allocation",
+    "center": "Grid Center",
+    "levels": "Levels",
+    "range": "Range",
+    "orders": "Active Orders",
+    "filled": "Filled",
+    "rebalances": "Rebalances",
+    "lastUpdate": "Last Update",
+    "refresh": "Refresh"
   }
 }

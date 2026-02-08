@@ -779,3 +779,94 @@ def clear_news_pause(
     cache = get_news_cache()
     cache.clear_pause()
     return {"status": "cleared"}
+
+
+# --- Strategy Performance Endpoints ---
+
+@router.get("/strategies/performance")
+def strategies_performance(
+    _user: AuthUser = Depends(require_roles(*ALLOWED_ROLES)),
+) -> list[dict[str, object]]:
+    """Return performance metrics for each strategy (currently Grid Trading)."""
+    from app.api.grid_data import get_strategy_performance
+
+    data = get_strategy_performance()
+    return cast(list[dict[str, object]], jsonable_encoder(data))
+
+
+# --- Portfolio Risk Endpoints ---
+
+@router.get("/risk/portfolio")
+def risk_portfolio(
+    _user: AuthUser = Depends(require_roles(*ALLOWED_ROLES)),
+) -> dict[str, object]:
+    """Return portfolio risk metrics derived from grid state."""
+    from app.api.grid_data import get_portfolio_risk as _get_risk
+
+    return cast(dict[str, object], jsonable_encoder(_get_risk()))
+
+
+# --- Kill Switch Endpoints ---
+
+@router.get("/risk/kill-switch/status")
+def kill_switch_status(
+    _user: AuthUser = Depends(require_roles(*ALLOWED_ROLES)),
+) -> dict[str, object]:
+    """Return kill switch state + risk metrics."""
+    from app.api.grid_data import get_kill_switch_status as _ks_status
+
+    return cast(dict[str, object], jsonable_encoder(_ks_status()))
+
+
+class KillSwitchTriggerRequest(BaseModel):
+    """Request to trigger kill switch."""
+    reason: str = Field(..., description="Reason for triggering kill switch")
+
+
+@router.post("/risk/kill-switch/trigger")
+def kill_switch_trigger(
+    request: KillSwitchTriggerRequest,
+    user: AuthUser = Depends(require_roles(*ALLOWED_ROLES)),
+) -> dict[str, object]:
+    """Trigger the kill switch — stop all trading immediately."""
+    from app.api.grid_data import trigger_kill_switch as _trigger
+
+    state = _trigger(reason=request.reason, triggered_by=user.uid)
+    return cast(dict[str, object], jsonable_encoder(state))
+
+
+@router.post("/risk/kill-switch/resume")
+def kill_switch_resume(
+    _user: AuthUser = Depends(require_roles(*ALLOWED_ROLES)),
+) -> dict[str, object]:
+    """Resume trading after kill switch."""
+    from app.api.grid_data import resume_from_kill as _resume
+
+    state = _resume()
+    return cast(dict[str, object], jsonable_encoder(state))
+
+
+# --- Grid Portfolio Endpoints ---
+
+@router.get("/grid/portfolio")
+def grid_portfolio(
+    _user: AuthUser = Depends(require_roles(*ALLOWED_ROLES)),
+) -> dict[str, object]:
+    """Return full grid portfolio data with all coins and levels."""
+    from app.api.grid_data import get_grid_portfolio as _grid
+
+    return cast(dict[str, object], jsonable_encoder(_grid()))
+
+
+@router.get("/grid/{symbol}")
+def grid_coin_detail(
+    symbol: str,
+    _user: AuthUser = Depends(require_roles(*ALLOWED_ROLES)),
+) -> dict[str, object]:
+    """Return detailed grid data for one coin."""
+    from app.api.grid_data import get_grid_coin_detail as _detail
+
+    data = _detail(symbol.upper())
+    if data is None:
+        raise HTTPException(status_code=404, detail=f"No grid data for {symbol}")
+    return cast(dict[str, object], jsonable_encoder(data))
