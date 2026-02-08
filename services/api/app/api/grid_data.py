@@ -344,8 +344,8 @@ def get_public_grid_performance() -> dict[str, Any]:
         "active": len(coins) > 0,
         "coins_traded": len(coins),
         "total_fills": total_buys + total_sells,
-        "daily_return_pct": round(_daily_ret, 2),
-        "total_pnl_usd": round(_total_pnl, 2),
+        "daily_return_pct": int(_daily_ret * 100) / 100.0,
+        "total_pnl_usd": int(_total_pnl * 100) / 100.0,
         "strategy": "Grid Trading",
         "last_updated": last_updated,
     }
