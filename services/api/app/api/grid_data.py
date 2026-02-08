@@ -337,12 +337,15 @@ def get_public_grid_performance() -> dict[str, Any]:
         if lu and (last_updated is None or lu > last_updated):
             last_updated = lu
 
+    _daily_ret: float = float(pnl_pct)
+    _total_pnl: float = float(net_pnl)
+
     return {
         "active": len(coins) > 0,
         "coins_traded": len(coins),
         "total_fills": total_buys + total_sells,
-        "daily_return_pct": round(float(pnl_pct) + 0.0, 2),
-        "total_pnl_usd": round(float(net_pnl) + 0.0, 2),
+        "daily_return_pct": round(_daily_ret, 2),
+        "total_pnl_usd": round(_total_pnl, 2),
         "strategy": "Grid Trading",
         "last_updated": last_updated,
     }
