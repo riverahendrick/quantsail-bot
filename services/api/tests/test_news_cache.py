@@ -1,7 +1,5 @@
 """Tests for news cache module."""
 
-import time
-
 from app.cache.news import InMemoryNewsCache, get_news_cache, reset_news_cache
 
 

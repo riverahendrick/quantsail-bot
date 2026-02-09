@@ -337,7 +337,8 @@
     "profitFactor": "FP",
     "netPnl": "P&L Neto",
     "avgTrade": "Prom. Op.",
-    "lastSignal": "Última Señal"
+    "lastSignal": "Última Señal",
+    "totalTradesParentheses": "({count})"
   },
   "RiskPortfolio": {
     "title": "Riesgo del Portafolio",

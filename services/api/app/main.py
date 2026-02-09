@@ -1,7 +1,7 @@
-﻿from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
-
 import os
+
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.private import router as private_router
 from app.api.public import router as public_router

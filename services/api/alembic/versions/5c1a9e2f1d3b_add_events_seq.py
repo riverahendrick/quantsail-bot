@@ -8,7 +8,8 @@ Create Date: 2026-01-28 11:25:00.000000
 from typing import Sequence, Union
 
 import sqlalchemy as sa
-from alembic import op, context
+
+from alembic import context, op
 
 
 def _column_exists(inspector: sa.Inspector, table: str, column: str) -> bool:
@@ -22,6 +23,7 @@ def _index_exists(inspector: sa.Inspector, table: str, index: str) -> bool:
 def _sequence_exists(bind: sa.Connection, sequence: str) -> bool:
     result = bind.execute(sa.text("SELECT to_regclass(:sequence)"), {"sequence": sequence})
     return result.scalar() is not None
+
 
 revision: str = "5c1a9e2f1d3b"
 down_revision: Union[str, Sequence[str], None] = "b581045cf266"

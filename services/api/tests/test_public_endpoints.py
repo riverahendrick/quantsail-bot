@@ -209,9 +209,7 @@ def test_public_summary_returns_latest_snapshot(
     assert summary["open_positions"] == 1
 
 
-def test_public_summary_empty(
-    migrated_engine: sa.Engine, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_public_summary_empty(migrated_engine: sa.Engine, monkeypatch: pytest.MonkeyPatch) -> None:
     """Return null fields when no snapshots exist."""
     _configure_rate_limit(monkeypatch, limit=1000, redis_url=None)
     client = TestClient(app)

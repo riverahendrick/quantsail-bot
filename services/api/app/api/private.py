@@ -5,7 +5,7 @@ import json
 import os
 import secrets
 import uuid
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Any, cast
 
 import sqlalchemy as sa
@@ -37,20 +37,24 @@ ALLOWED_ROLES = (Role.OWNER, Role.CEO, Role.DEVELOPER)
 
 # --- Schemas ---
 
+
 class ArmResponse(BaseModel):
     """Response containing arming token."""
+
     arming_token: str = Field(..., description="Short-lived token to authorize start")
     expires_in_seconds: int = Field(..., description="Token validity duration")
 
 
 class StartRequest(BaseModel):
     """Request to start the bot."""
+
     mode: str = Field(..., description="Execution mode: dry-run or live")
     arming_token: str | None = Field(None, description="Required for live mode")
 
 
 class ConfigCreate(BaseModel):
     """Request to create a new config version."""
+
     config_json: dict[str, Any] = Field(..., description="Full bot configuration object")
 
     @field_validator("config_json")
@@ -66,6 +70,7 @@ class ConfigCreate(BaseModel):
 
 class ConfigResponse(BaseModel):
     """Response for a config version."""
+
     version: int
     config_hash: str
     is_active: bool
@@ -76,6 +81,7 @@ class ConfigResponse(BaseModel):
 
 class ExchangeKeyCreate(BaseModel):
     """Request to add an exchange key."""
+
     label: str = Field(..., description="Human-readable label for this key")
     api_key: str = Field(..., description="Public API Key")
     secret_key: str = Field(..., description="Private Secret Key")
@@ -83,6 +89,7 @@ class ExchangeKeyCreate(BaseModel):
 
 class ExchangeKeyResponse(BaseModel):
     """Safe response for exchange key status (no secrets)."""
+
     id: str
     exchange: str
     label: str | None
@@ -94,6 +101,7 @@ class ExchangeKeyResponse(BaseModel):
 
 class NewsIngestRequest(BaseModel):
     """Request to ingest negative high-impact news."""
+
     title: str = Field(..., description="News headline")
     sentiment: str = Field(..., description="Sentiment: positive, negative, neutral")
     impact: str = Field(..., description="Impact level: high, medium, low")
@@ -105,6 +113,7 @@ class NewsIngestRequest(BaseModel):
 
 class NewsIngestResponse(BaseModel):
     """Response from news ingestion."""
+
     paused: bool = Field(..., description="Whether trading was paused")
     reason: str = Field(..., description="Reason for pause or rejection")
     pause_until: str | None = Field(None, description="ISO timestamp when pause expires")
@@ -112,6 +121,7 @@ class NewsIngestResponse(BaseModel):
 
 class UserCreateRequest(BaseModel):
     """Request to create a new user."""
+
     email: str = Field(..., description="User email")
     role: Role = Field(..., description="Assigned role")
     send_reset_link: bool = Field(default=True, description="Return password reset link")
@@ -119,6 +129,7 @@ class UserCreateRequest(BaseModel):
 
 class UserUpdateRequest(BaseModel):
     """Request to update user role or disable access."""
+
     role: Role | None = Field(default=None, description="Updated role")
     disabled: bool | None = Field(default=None, description="Disable or enable user")
     send_reset_link: bool = Field(default=False, description="Return password reset link")
@@ -126,6 +137,7 @@ class UserUpdateRequest(BaseModel):
 
 class UserResponse(BaseModel):
     """Response for user management."""
+
     id: str
     email: str
     role: Role
@@ -135,6 +147,7 @@ class UserResponse(BaseModel):
 
 
 # --- Bot Control Endpoints ---
+
 
 @router.post("/bot/arm")
 def arm_bot(_user: AuthUser = Depends(require_roles(*ALLOWED_ROLES))) -> ArmResponse:
@@ -152,15 +165,15 @@ def start_bot(
     if request.mode == "live":
         if not request.arming_token:
             raise HTTPException(
-                status_code=400, 
-                detail={"code": "ARMING_REQUIRED", "message": "Live mode requires arming token"}
+                status_code=400,
+                detail={"code": "ARMING_REQUIRED", "message": "Live mode requires arming token"},
             )
-        
+
         valid = get_arming_cache().verify_and_consume_token(request.arming_token)
         if not valid:
             raise HTTPException(
-                status_code=403, 
-                detail={"code": "INVALID_TOKEN", "message": "Invalid or expired arming token"}
+                status_code=403,
+                detail={"code": "INVALID_TOKEN", "message": "Invalid or expired arming token"},
             )
 
     return {"status": "started", "mode": request.mode}
@@ -189,6 +202,7 @@ def resume_entries(_user: AuthUser = Depends(require_roles(*ALLOWED_ROLES))) -> 
 
 # Simple in-memory user store for development when DB is not available
 DEV_USERS: list[dict[str, Any]] = []
+
 
 def _resolve_firebase_user(email: str) -> tuple[str | None, bool | None]:
     """Return (uid, disabled) for a Firebase user if present."""
@@ -288,13 +302,13 @@ def create_user(
             if not record:
                 temp_password = secrets.token_urlsafe(16)
                 record = create_firebase_user(email=email, password=temp_password)
-            
+
             set_firebase_custom_claims(record.uid, {"role": request.role.value})
-            
+
             reset_link = None
             if request.send_reset_link:
                 reset_link = generate_password_reset_link(email)
-            
+
             return UserResponse(
                 id=f"dev-{uuid.uuid4()}",
                 email=email,
@@ -321,13 +335,13 @@ def update_user(
     with get_engine().begin() as conn:
         row = conn.execute(sa.select(User).where(User.id == user_uuid)).mappings().one_or_none()
         if not row:
-            raise HTTPException(status_code=404, detail=error_detail("NOT_FOUND", "User not found."))
+            raise HTTPException(
+                status_code=404, detail=error_detail("NOT_FOUND", "User not found.")
+            )
 
         if request.role is not None:
             conn.execute(
-                sa.update(User)
-                .where(User.id == user_uuid)
-                .values(role=request.role.value)
+                sa.update(User).where(User.id == user_uuid).values(role=request.role.value)
             )
 
     uid, disabled = _resolve_firebase_user(row["email"])
@@ -358,7 +372,9 @@ def update_user(
         password_reset_link=reset_link,
     )
 
+
 # --- Config Endpoints ---
+
 
 @router.get("/config")
 def get_active_config(_user: AuthUser = Depends(require_roles(*ALLOWED_ROLES))) -> ConfigResponse:
@@ -366,10 +382,12 @@ def get_active_config(_user: AuthUser = Depends(require_roles(*ALLOWED_ROLES))) 
     with get_engine().connect() as conn:
         stmt = sa.select(BotConfigVersion).where(BotConfigVersion.is_active.is_(True))
         row = conn.execute(stmt).mappings().one_or_none()
-        
+
         if not row:
-            raise HTTPException(status_code=404, detail={"code": "NO_CONFIG", "message": "No active config found"})
-            
+            raise HTTPException(
+                status_code=404, detail={"code": "NO_CONFIG", "message": "No active config found"}
+            )
+
         return ConfigResponse(
             version=row["version"],
             config_hash=row["config_hash"],
@@ -382,8 +400,7 @@ def get_active_config(_user: AuthUser = Depends(require_roles(*ALLOWED_ROLES))) 
 
 @router.post("/config/versions")
 def create_config_version(
-    request: ConfigCreate, 
-    user: AuthUser = Depends(require_roles(Role.OWNER, Role.CEO))
+    request: ConfigCreate, user: AuthUser = Depends(require_roles(Role.OWNER, Role.CEO))
 ) -> ConfigResponse:
     """Create a new immutable config version."""
     # Canonical hash
@@ -394,26 +411,30 @@ def create_config_version(
         # Get next version number
         last_ver = conn.execute(sa.select(sa.func.max(BotConfigVersion.version))).scalar() or 0
         new_ver = last_ver + 1
-        
+
         # Create
         new_config = BotConfigVersion(
             id=uuid.uuid4(),
             version=new_ver,
             config_json=request.config_json,
             config_hash=config_hash,
-            created_by=user.user_id, # Assuming AuthUser has resolved user_id (UUID)
-            is_active=False
+            created_by=user.user_id,  # Assuming AuthUser has resolved user_id (UUID)
+            is_active=False,
         )
         # Note: We can't add object directly without session. Using Core insert.
-        stmt = sa.insert(BotConfigVersion).values(
-            id=new_config.id,
-            version=new_config.version,
-            config_json=new_config.config_json,
-            config_hash=new_config.config_hash,
-            created_by=user.user_id,
-            is_active=False
-        ).returning(BotConfigVersion.created_at)
-        
+        stmt = (
+            sa.insert(BotConfigVersion)
+            .values(
+                id=new_config.id,
+                version=new_config.version,
+                config_json=new_config.config_json,
+                config_hash=new_config.config_hash,
+                created_by=user.user_id,
+                is_active=False,
+            )
+            .returning(BotConfigVersion.created_at)
+        )
+
         result = conn.execute(stmt).fetchone()
         created_at = result[0] if result else datetime.now(timezone.utc)
 
@@ -429,8 +450,7 @@ def create_config_version(
 
 @router.post("/config/activate/{version}")
 def activate_config(
-    version: int,
-    _user: AuthUser = Depends(require_roles(Role.OWNER, Role.CEO))
+    version: int, _user: AuthUser = Depends(require_roles(Role.OWNER, Role.CEO))
 ) -> dict[str, Any]:
     """Activate a specific config version."""
     with get_engine().begin() as conn:
@@ -438,37 +458,37 @@ def activate_config(
         exists = conn.execute(
             sa.select(BotConfigVersion.id).where(BotConfigVersion.version == version)
         ).scalar_one_or_none()
-        
+
         if not exists:
             raise HTTPException(status_code=404, detail="Config version not found")
 
         # Deactivate all
         conn.execute(sa.update(BotConfigVersion).values(is_active=False))
-        
+
         # Activate target
         conn.execute(
             sa.update(BotConfigVersion)
             .where(BotConfigVersion.version == version)
             .values(is_active=True, activated_at=sa.func.now())
         )
-        
+
         return {"status": "activated", "version": version}
 
 
 # --- Exchange Key Endpoints ---
 
+
 @router.post("/exchanges/binance/keys")
 def add_binance_key(
-    request: ExchangeKeyCreate,
-    user: AuthUser = Depends(require_roles(Role.OWNER))
+    request: ExchangeKeyCreate, user: AuthUser = Depends(require_roles(Role.OWNER))
 ) -> ExchangeKeyResponse:
     """Add encrypted Binance credentials."""
     svc = get_encryption_service()
-    
+
     # Combine key:secret into single payload
     payload = f"{request.api_key}:{request.secret_key}"
     ciphertext, nonce = svc.encrypt(payload)
-    
+
     with get_engine().begin() as conn:
         # Deactivate existing active keys for this exchange
         conn.execute(
@@ -493,12 +513,12 @@ def add_binance_key(
                 is_active=True,
             )
         )
-        
+
         # Fetch back for timestamps
         row = conn.execute(
             sa.select(ExchangeKey).where(ExchangeKey.id == key_id)
-        ).fetchone() # Returns Row object
-        
+        ).fetchone()  # Returns Row object
+
         # Convert Row to dict/object access
         return ExchangeKeyResponse(
             id=str(row.id),
@@ -513,16 +533,13 @@ def add_binance_key(
 
 @router.delete("/exchanges/binance/keys/{key_id}")
 def revoke_binance_key(
-    key_id: str,
-    _user: AuthUser = Depends(require_roles(Role.OWNER))
+    key_id: str, _user: AuthUser = Depends(require_roles(Role.OWNER))
 ) -> dict[str, str]:
     """Revoke an exchange key (soft delete)."""
     try:
         u_id = uuid.UUID(key_id)
     except ValueError:
-        raise HTTPException(
-            status_code=400, detail=error_detail("INVALID_ID", "Invalid key id.")
-        )
+        raise HTTPException(status_code=400, detail=error_detail("INVALID_ID", "Invalid key id."))
 
     with get_engine().begin() as conn:
         result = conn.execute(
@@ -531,23 +548,23 @@ def revoke_binance_key(
             .values(revoked_at=datetime.now(timezone.utc), is_active=False)
         )
         if result.rowcount == 0:
-            raise HTTPException(
-                status_code=404, detail=error_detail("NOT_FOUND", "Key not found.")
-            )
+            raise HTTPException(status_code=404, detail=error_detail("NOT_FOUND", "Key not found."))
 
     return {"status": "revoked", "id": key_id}
 
 
 @router.get("/exchanges/binance/keys/status")
 def get_key_status(
-    _user: AuthUser = Depends(require_roles(Role.OWNER))
+    _user: AuthUser = Depends(require_roles(Role.OWNER)),
 ) -> list[ExchangeKeyResponse]:
     """List active keys (metadata only, no secrets)."""
     with get_engine().connect() as conn:
-        rows = conn.execute(
-            sa.select(ExchangeKey).where(ExchangeKey.revoked_at.is_(None))
-        ).mappings().all()
-        
+        rows = (
+            conn.execute(sa.select(ExchangeKey).where(ExchangeKey.revoked_at.is_(None)))
+            .mappings()
+            .all()
+        )
+
         return [
             ExchangeKeyResponse(
                 id=str(r["id"]),
@@ -557,12 +574,14 @@ def get_key_status(
                 created_at=r["created_at"],
                 revoked_at=r["revoked_at"],
                 is_active=r["is_active"],
-            ) for r in rows
+            )
+            for r in rows
         ]
 
 
 class ExchangeKeyUpdate(BaseModel):
     """Request to update an exchange key (label or rotate secrets)."""
+
     label: str | None = Field(default=None, description="Updated label")
     api_key: str | None = Field(default=None, description="New API key")
     secret_key: str | None = Field(default=None, description="New secret key")
@@ -585,9 +604,7 @@ def update_binance_key(
     try:
         u_id = uuid.UUID(key_id)
     except ValueError:
-        raise HTTPException(
-            status_code=400, detail=error_detail("INVALID_ID", "Invalid key id.")
-        )
+        raise HTTPException(status_code=400, detail=error_detail("INVALID_ID", "Invalid key id."))
 
     update_values: dict[str, Any] = {}
     if request.label is not None:
@@ -623,9 +640,7 @@ def update_binance_key(
         ).fetchone()
 
         if not result:
-            raise HTTPException(
-                status_code=404, detail=error_detail("NOT_FOUND", "Key not found.")
-            )
+            raise HTTPException(status_code=404, detail=error_detail("NOT_FOUND", "Key not found."))
 
         return ExchangeKeyResponse(
             id=str(result.id),
@@ -647,18 +662,16 @@ def activate_binance_key(
     try:
         u_id = uuid.UUID(key_id)
     except ValueError:
-        raise HTTPException(
-            status_code=400, detail=error_detail("INVALID_ID", "Invalid key id.")
-        )
+        raise HTTPException(status_code=400, detail=error_detail("INVALID_ID", "Invalid key id."))
 
     with get_engine().begin() as conn:
-        row = conn.execute(
-            sa.select(ExchangeKey).where(ExchangeKey.id == u_id)
-        ).mappings().one_or_none()
+        row = (
+            conn.execute(sa.select(ExchangeKey).where(ExchangeKey.id == u_id))
+            .mappings()
+            .one_or_none()
+        )
         if not row:
-            raise HTTPException(
-                status_code=404, detail=error_detail("NOT_FOUND", "Key not found.")
-            )
+            raise HTTPException(status_code=404, detail=error_detail("NOT_FOUND", "Key not found."))
         if row["revoked_at"] is not None:
             raise HTTPException(
                 status_code=400, detail=error_detail("KEY_REVOKED", "Key is revoked.")
@@ -672,14 +685,13 @@ def activate_binance_key(
             )
             .values(is_active=False)
         )
-        conn.execute(
-            sa.update(ExchangeKey).where(ExchangeKey.id == u_id).values(is_active=True)
-        )
+        conn.execute(sa.update(ExchangeKey).where(ExchangeKey.id == u_id).values(is_active=True))
 
     return {"status": "activated", "id": key_id}
 
 
 # --- Read-Only Data Endpoints ---
+
 
 @router.get("/health")
 def health(_user: AuthUser = Depends(require_roles(*ALLOWED_ROLES))) -> dict[str, bool]:
@@ -715,6 +727,7 @@ def orders(_user: AuthUser = Depends(require_roles(*ALLOWED_ROLES))) -> list[dic
     # Simple query implementation
     with get_engine().connect() as conn:
         from app.db.models import Order
+
         stmt = sa.select(Order).order_by(Order.created_at.desc()).limit(100)
         rows = conn.execute(stmt).mappings().all()
         return cast(list[dict[str, object]], jsonable_encoder(rows))
@@ -735,6 +748,7 @@ def equity(_user: AuthUser = Depends(require_roles(*ALLOWED_ROLES))) -> list[dic
 
 
 # --- News Endpoints ---
+
 
 @router.post("/news/ingest")
 def ingest_news(
@@ -772,9 +786,7 @@ def news_status(_user: AuthUser = Depends(require_roles(*ALLOWED_ROLES))) -> dic
 
 
 @router.delete("/news/pause")
-def clear_news_pause(
-    _user: AuthUser = Depends(require_roles(*ALLOWED_ROLES))
-) -> dict[str, str]:
+def clear_news_pause(_user: AuthUser = Depends(require_roles(*ALLOWED_ROLES))) -> dict[str, str]:
     """Manually clear the news pause state."""
     cache = get_news_cache()
     cache.clear_pause()
@@ -782,6 +794,7 @@ def clear_news_pause(
 
 
 # --- Strategy Performance Endpoints ---
+
 
 @router.get("/strategies/performance")
 def strategies_performance(
@@ -796,6 +809,7 @@ def strategies_performance(
 
 # --- Portfolio Risk Endpoints ---
 
+
 @router.get("/risk/portfolio")
 def risk_portfolio(
     _user: AuthUser = Depends(require_roles(*ALLOWED_ROLES)),
@@ -807,6 +821,7 @@ def risk_portfolio(
 
 
 # --- Kill Switch Endpoints ---
+
 
 @router.get("/risk/kill-switch/status")
 def kill_switch_status(
@@ -820,6 +835,7 @@ def kill_switch_status(
 
 class KillSwitchTriggerRequest(BaseModel):
     """Request to trigger kill switch."""
+
     reason: str = Field(..., description="Reason for triggering kill switch")
 
 
@@ -847,6 +863,7 @@ def kill_switch_resume(
 
 
 # --- Grid Portfolio Endpoints ---
+
 
 @router.get("/grid/portfolio")
 def grid_portfolio(

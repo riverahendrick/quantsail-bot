@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 import os
 import uuid
@@ -84,154 +84,154 @@ def test_schema_tables_and_columns_exist(migrated_engine: sa.Engine) -> None:
                 "email": {"udt_name": "text", "is_nullable": "NO"},
                 "role": {"udt_name": "text", "is_nullable": "NO"},
                 "created_at": {"udt_name": "timestamptz", "is_nullable": "NO"},
-        },
-        "exchange_keys": {
-            "id": {"udt_name": "uuid", "is_nullable": "NO"},
-            "exchange": {"udt_name": "text", "is_nullable": "NO"},
-            "label": {"udt_name": "text", "is_nullable": "YES"},
-            "ciphertext": {"udt_name": "bytea", "is_nullable": "NO"},
-            "nonce": {"udt_name": "bytea", "is_nullable": "NO"},
-            "key_version": {"udt_name": "int4", "is_nullable": "NO"},
-            "created_by": {"udt_name": "uuid", "is_nullable": "YES"},
-            "created_at": {"udt_name": "timestamptz", "is_nullable": "NO"},
-            "is_active": {"udt_name": "bool", "is_nullable": "NO"},
-            "revoked_at": {"udt_name": "timestamptz", "is_nullable": "YES"},
-        },
-        "bot_config_versions": {
-            "id": {"udt_name": "uuid", "is_nullable": "NO"},
-            "version": {"udt_name": "int4", "is_nullable": "NO"},
-            "config_json": {"udt_name": "jsonb", "is_nullable": "NO"},
-            "config_hash": {"udt_name": "text", "is_nullable": "NO"},
-            "created_by": {"udt_name": "uuid", "is_nullable": "YES"},
-            "created_at": {"udt_name": "timestamptz", "is_nullable": "NO"},
-            "activated_at": {"udt_name": "timestamptz", "is_nullable": "YES"},
-            "is_active": {"udt_name": "bool", "is_nullable": "NO"},
-        },
-        "trades": {
-            "id": {"udt_name": "uuid", "is_nullable": "NO"},
-            "symbol": {"udt_name": "text", "is_nullable": "NO"},
-            "side": {"udt_name": "text", "is_nullable": "NO"},
-            "status": {"udt_name": "text", "is_nullable": "NO"},
-            "mode": {"udt_name": "text", "is_nullable": "NO"},
-            "opened_at": {"udt_name": "timestamptz", "is_nullable": "NO"},
-            "closed_at": {"udt_name": "timestamptz", "is_nullable": "YES"},
-            "entry_price": {
-                "udt_name": "numeric",
-                "numeric_precision": 24,
-                "numeric_scale": 10,
-                "is_nullable": "NO",
             },
-            "entry_qty": {
-                "udt_name": "numeric",
-                "numeric_precision": 24,
-                "numeric_scale": 10,
-                "is_nullable": "NO",
+            "exchange_keys": {
+                "id": {"udt_name": "uuid", "is_nullable": "NO"},
+                "exchange": {"udt_name": "text", "is_nullable": "NO"},
+                "label": {"udt_name": "text", "is_nullable": "YES"},
+                "ciphertext": {"udt_name": "bytea", "is_nullable": "NO"},
+                "nonce": {"udt_name": "bytea", "is_nullable": "NO"},
+                "key_version": {"udt_name": "int4", "is_nullable": "NO"},
+                "created_by": {"udt_name": "uuid", "is_nullable": "YES"},
+                "created_at": {"udt_name": "timestamptz", "is_nullable": "NO"},
+                "is_active": {"udt_name": "bool", "is_nullable": "NO"},
+                "revoked_at": {"udt_name": "timestamptz", "is_nullable": "YES"},
             },
-            "entry_notional_usd": {
-                "udt_name": "numeric",
-                "numeric_precision": 24,
-                "numeric_scale": 10,
-                "is_nullable": "NO",
+            "bot_config_versions": {
+                "id": {"udt_name": "uuid", "is_nullable": "NO"},
+                "version": {"udt_name": "int4", "is_nullable": "NO"},
+                "config_json": {"udt_name": "jsonb", "is_nullable": "NO"},
+                "config_hash": {"udt_name": "text", "is_nullable": "NO"},
+                "created_by": {"udt_name": "uuid", "is_nullable": "YES"},
+                "created_at": {"udt_name": "timestamptz", "is_nullable": "NO"},
+                "activated_at": {"udt_name": "timestamptz", "is_nullable": "YES"},
+                "is_active": {"udt_name": "bool", "is_nullable": "NO"},
             },
-            "stop_price": {
-                "udt_name": "numeric",
-                "numeric_precision": 24,
-                "numeric_scale": 10,
-                "is_nullable": "NO",
+            "trades": {
+                "id": {"udt_name": "uuid", "is_nullable": "NO"},
+                "symbol": {"udt_name": "text", "is_nullable": "NO"},
+                "side": {"udt_name": "text", "is_nullable": "NO"},
+                "status": {"udt_name": "text", "is_nullable": "NO"},
+                "mode": {"udt_name": "text", "is_nullable": "NO"},
+                "opened_at": {"udt_name": "timestamptz", "is_nullable": "NO"},
+                "closed_at": {"udt_name": "timestamptz", "is_nullable": "YES"},
+                "entry_price": {
+                    "udt_name": "numeric",
+                    "numeric_precision": 24,
+                    "numeric_scale": 10,
+                    "is_nullable": "NO",
+                },
+                "entry_qty": {
+                    "udt_name": "numeric",
+                    "numeric_precision": 24,
+                    "numeric_scale": 10,
+                    "is_nullable": "NO",
+                },
+                "entry_notional_usd": {
+                    "udt_name": "numeric",
+                    "numeric_precision": 24,
+                    "numeric_scale": 10,
+                    "is_nullable": "NO",
+                },
+                "stop_price": {
+                    "udt_name": "numeric",
+                    "numeric_precision": 24,
+                    "numeric_scale": 10,
+                    "is_nullable": "NO",
+                },
+                "take_profit_price": {
+                    "udt_name": "numeric",
+                    "numeric_precision": 24,
+                    "numeric_scale": 10,
+                    "is_nullable": "NO",
+                },
+                "trailing_enabled": {"udt_name": "bool", "is_nullable": "NO"},
+                "trailing_offset": {
+                    "udt_name": "numeric",
+                    "numeric_precision": 24,
+                    "numeric_scale": 10,
+                    "is_nullable": "YES",
+                },
+                "exit_price": {
+                    "udt_name": "numeric",
+                    "numeric_precision": 24,
+                    "numeric_scale": 10,
+                    "is_nullable": "YES",
+                },
+                "realized_pnl_usd": {
+                    "udt_name": "numeric",
+                    "numeric_precision": 24,
+                    "numeric_scale": 10,
+                    "is_nullable": "YES",
+                },
+                "fees_paid_usd": {
+                    "udt_name": "numeric",
+                    "numeric_precision": 24,
+                    "numeric_scale": 10,
+                    "is_nullable": "YES",
+                },
+                "slippage_est_usd": {
+                    "udt_name": "numeric",
+                    "numeric_precision": 24,
+                    "numeric_scale": 10,
+                    "is_nullable": "YES",
+                },
+                "notes": {"udt_name": "jsonb", "is_nullable": "YES"},
             },
-            "take_profit_price": {
-                "udt_name": "numeric",
-                "numeric_precision": 24,
-                "numeric_scale": 10,
-                "is_nullable": "NO",
+            "orders": {
+                "id": {"udt_name": "uuid", "is_nullable": "NO"},
+                "trade_id": {"udt_name": "uuid", "is_nullable": "NO"},
+                "symbol": {"udt_name": "text", "is_nullable": "NO"},
+                "side": {"udt_name": "text", "is_nullable": "NO"},
+                "order_type": {"udt_name": "text", "is_nullable": "NO"},
+                "qty": {
+                    "udt_name": "numeric",
+                    "numeric_precision": 24,
+                    "numeric_scale": 10,
+                    "is_nullable": "NO",
+                },
+                "price": {
+                    "udt_name": "numeric",
+                    "numeric_precision": 24,
+                    "numeric_scale": 10,
+                    "is_nullable": "YES",
+                },
+                "status": {"udt_name": "text", "is_nullable": "NO"},
+                "exchange_order_id": {"udt_name": "text", "is_nullable": "YES"},
+                "idempotency_key": {"udt_name": "text", "is_nullable": "YES"},
+                "created_at": {"udt_name": "timestamptz", "is_nullable": "NO"},
+                "updated_at": {"udt_name": "timestamptz", "is_nullable": "NO"},
             },
-            "trailing_enabled": {"udt_name": "bool", "is_nullable": "NO"},
-            "trailing_offset": {
-                "udt_name": "numeric",
-                "numeric_precision": 24,
-                "numeric_scale": 10,
-                "is_nullable": "YES",
+            "equity_snapshots": {
+                "id": {"udt_name": "uuid", "is_nullable": "NO"},
+                "ts": {"udt_name": "timestamptz", "is_nullable": "NO"},
+                "equity_usd": {
+                    "udt_name": "numeric",
+                    "numeric_precision": 24,
+                    "numeric_scale": 10,
+                    "is_nullable": "NO",
+                },
+                "cash_usd": {
+                    "udt_name": "numeric",
+                    "numeric_precision": 24,
+                    "numeric_scale": 10,
+                    "is_nullable": "NO",
+                },
+                "unrealized_pnl_usd": {
+                    "udt_name": "numeric",
+                    "numeric_precision": 24,
+                    "numeric_scale": 10,
+                    "is_nullable": "NO",
+                },
+                "realized_pnl_today_usd": {
+                    "udt_name": "numeric",
+                    "numeric_precision": 24,
+                    "numeric_scale": 10,
+                    "is_nullable": "NO",
+                },
+                "open_positions": {"udt_name": "int4", "is_nullable": "NO"},
+                "meta": {"udt_name": "jsonb", "is_nullable": "YES"},
             },
-            "exit_price": {
-                "udt_name": "numeric",
-                "numeric_precision": 24,
-                "numeric_scale": 10,
-                "is_nullable": "YES",
-            },
-            "realized_pnl_usd": {
-                "udt_name": "numeric",
-                "numeric_precision": 24,
-                "numeric_scale": 10,
-                "is_nullable": "YES",
-            },
-            "fees_paid_usd": {
-                "udt_name": "numeric",
-                "numeric_precision": 24,
-                "numeric_scale": 10,
-                "is_nullable": "YES",
-            },
-            "slippage_est_usd": {
-                "udt_name": "numeric",
-                "numeric_precision": 24,
-                "numeric_scale": 10,
-                "is_nullable": "YES",
-            },
-            "notes": {"udt_name": "jsonb", "is_nullable": "YES"},
-        },
-        "orders": {
-            "id": {"udt_name": "uuid", "is_nullable": "NO"},
-            "trade_id": {"udt_name": "uuid", "is_nullable": "NO"},
-            "symbol": {"udt_name": "text", "is_nullable": "NO"},
-            "side": {"udt_name": "text", "is_nullable": "NO"},
-            "order_type": {"udt_name": "text", "is_nullable": "NO"},
-            "qty": {
-                "udt_name": "numeric",
-                "numeric_precision": 24,
-                "numeric_scale": 10,
-                "is_nullable": "NO",
-            },
-            "price": {
-                "udt_name": "numeric",
-                "numeric_precision": 24,
-                "numeric_scale": 10,
-                "is_nullable": "YES",
-            },
-            "status": {"udt_name": "text", "is_nullable": "NO"},
-            "exchange_order_id": {"udt_name": "text", "is_nullable": "YES"},
-            "idempotency_key": {"udt_name": "text", "is_nullable": "YES"},
-            "created_at": {"udt_name": "timestamptz", "is_nullable": "NO"},
-            "updated_at": {"udt_name": "timestamptz", "is_nullable": "NO"},
-        },
-        "equity_snapshots": {
-            "id": {"udt_name": "uuid", "is_nullable": "NO"},
-            "ts": {"udt_name": "timestamptz", "is_nullable": "NO"},
-            "equity_usd": {
-                "udt_name": "numeric",
-                "numeric_precision": 24,
-                "numeric_scale": 10,
-                "is_nullable": "NO",
-            },
-            "cash_usd": {
-                "udt_name": "numeric",
-                "numeric_precision": 24,
-                "numeric_scale": 10,
-                "is_nullable": "NO",
-            },
-            "unrealized_pnl_usd": {
-                "udt_name": "numeric",
-                "numeric_precision": 24,
-                "numeric_scale": 10,
-                "is_nullable": "NO",
-            },
-            "realized_pnl_today_usd": {
-                "udt_name": "numeric",
-                "numeric_precision": 24,
-                "numeric_scale": 10,
-                "is_nullable": "NO",
-            },
-            "open_positions": {"udt_name": "int4", "is_nullable": "NO"},
-            "meta": {"udt_name": "jsonb", "is_nullable": "YES"},
-        },
             "events": {
                 "id": {"udt_name": "uuid", "is_nullable": "NO"},
                 "seq": {"udt_name": "int8", "is_nullable": "NO"},
@@ -321,6 +321,7 @@ def test_schema_indexes_exist(migrated_engine: sa.Engine) -> None:
                 f"Index {index_name} should include {desc_column} DESC"
             )
 
+
 def test_schema_foreign_keys_exist(migrated_engine: sa.Engine) -> None:
     """Ensure foreign key constraints match the documented schema."""
     expected = {
@@ -353,9 +354,7 @@ def test_schema_foreign_keys_exist(migrated_engine: sa.Engine) -> None:
         rows = conn.execute(query).all()
 
     found = {
-        (row[0], row[1], row[2], row[3])
-        for row in rows
-        if row[0] and row[1] and row[2] and row[3]
+        (row[0], row[1], row[2], row[3]) for row in rows if row[0] and row[1] and row[2] and row[3]
     }
 
     for entry in expected:
@@ -414,9 +413,7 @@ def test_bot_config_active_unique_index_enforced(migrated_engine: sa.Engine) -> 
             )
 
 
-def test_db_health_endpoint(
-    migrated_engine: sa.Engine, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_db_health_endpoint(migrated_engine: sa.Engine, monkeypatch: pytest.MonkeyPatch) -> None:
     """Confirm /v1/health/db responds when Postgres is reachable."""
     email = "owner@example.com"
     with migrated_engine.begin() as conn:

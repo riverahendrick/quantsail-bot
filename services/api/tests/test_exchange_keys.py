@@ -72,8 +72,16 @@ def test_add_key_deactivates_existing(
     second_id = response.json()["id"]
 
     with migrated_engine.connect() as conn:
-        first = conn.execute(sa.select(ExchangeKey).where(ExchangeKey.id == uuid.UUID(first_id))).mappings().one()
-        second = conn.execute(sa.select(ExchangeKey).where(ExchangeKey.id == uuid.UUID(second_id))).mappings().one()
+        first = (
+            conn.execute(sa.select(ExchangeKey).where(ExchangeKey.id == uuid.UUID(first_id)))
+            .mappings()
+            .one()
+        )
+        second = (
+            conn.execute(sa.select(ExchangeKey).where(ExchangeKey.id == uuid.UUID(second_id)))
+            .mappings()
+            .one()
+        )
 
     assert first["is_active"] is False
     assert second["is_active"] is True
@@ -106,6 +114,7 @@ def test_get_key_status_includes_active_flag(
     payload = response.json()
     assert payload[0]["id"] == str(key_id)
     assert payload[0]["is_active"] is True
+
 
 def test_update_key_label_and_rotate(
     migrated_engine: sa.Engine, monkeypatch: pytest.MonkeyPatch
@@ -148,9 +157,7 @@ def test_update_key_requires_api_and_secret(
     client = _authorized_client(migrated_engine, monkeypatch)
     key_id = _insert_key(migrated_engine, label="Key")
 
-    response = client.patch(
-        f"/v1/exchanges/binance/keys/{key_id}", json={"api_key": "only"}
-    )
+    response = client.patch(f"/v1/exchanges/binance/keys/{key_id}", json={"api_key": "only"})
 
     assert response.status_code == 400
 
@@ -167,8 +174,12 @@ def test_activate_key_switches_active(
 
     assert response.status_code == 200
     with migrated_engine.connect() as conn:
-        first = conn.execute(sa.select(ExchangeKey).where(ExchangeKey.id == first_id)).mappings().one()
-        second = conn.execute(sa.select(ExchangeKey).where(ExchangeKey.id == second_id)).mappings().one()
+        first = (
+            conn.execute(sa.select(ExchangeKey).where(ExchangeKey.id == first_id)).mappings().one()
+        )
+        second = (
+            conn.execute(sa.select(ExchangeKey).where(ExchangeKey.id == second_id)).mappings().one()
+        )
     assert first["is_active"] is False
     assert second["is_active"] is True
 
@@ -192,9 +203,7 @@ def test_activate_key_rejected_when_revoked(
     assert response.json()["detail"]["code"] == "KEY_REVOKED"
 
 
-def test_update_key_invalid_id(
-    migrated_engine: sa.Engine, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_update_key_invalid_id(migrated_engine: sa.Engine, monkeypatch: pytest.MonkeyPatch) -> None:
     client = _authorized_client(migrated_engine, monkeypatch)
 
     response = client.patch("/v1/exchanges/binance/keys/not-a-uuid", json={"label": "X"})
@@ -203,23 +212,17 @@ def test_update_key_invalid_id(
     assert response.json()["detail"]["code"] == "INVALID_ID"
 
 
-def test_update_key_not_found(
-    migrated_engine: sa.Engine, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_update_key_not_found(migrated_engine: sa.Engine, monkeypatch: pytest.MonkeyPatch) -> None:
     client = _authorized_client(migrated_engine, monkeypatch)
     missing_id = uuid.uuid4()
 
-    response = client.patch(
-        f"/v1/exchanges/binance/keys/{missing_id}", json={"label": "X"}
-    )
+    response = client.patch(f"/v1/exchanges/binance/keys/{missing_id}", json={"label": "X"})
 
     assert response.status_code == 404
     assert response.json()["detail"]["code"] == "NOT_FOUND"
 
 
-def test_revoke_key_invalid_id(
-    migrated_engine: sa.Engine, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_revoke_key_invalid_id(migrated_engine: sa.Engine, monkeypatch: pytest.MonkeyPatch) -> None:
     client = _authorized_client(migrated_engine, monkeypatch)
 
     response = client.delete("/v1/exchanges/binance/keys/not-a-uuid")

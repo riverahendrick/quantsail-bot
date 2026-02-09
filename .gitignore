@@ -6,6 +6,10 @@ services/engine/.env
 .env
 .env.*
 
+# Secrets
+services/api/serviceAccountKey.json
+serviceAccountKey.json
+
 # Python caches and coverage
 __pycache__/
 *.pyc
@@ -15,6 +19,21 @@ coverage.json
 coverage_report.txt
 *.egg-info/
 
+# Virtual environments
+.venv/
+venv/
+
+# IDE
+.vscode/
+
+# Node
+node_modules/
+
 # Data directories (backtest results, grid state)
 services/data/
 data/
+
+# Build / cache
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/

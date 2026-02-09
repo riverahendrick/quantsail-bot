@@ -68,6 +68,7 @@ class RedisArmingCache:
 
 from functools import lru_cache
 
+
 @lru_cache(maxsize=1)
 def get_arming_cache() -> ArmingCache:
     """Return the configured arming cache."""

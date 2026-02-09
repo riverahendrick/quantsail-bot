@@ -17,6 +17,7 @@ def _credentials() -> HTTPAuthorizationCredentials:
 
 def test_get_current_user_invalid_token(monkeypatch: pytest.MonkeyPatch) -> None:
     """Return 401 when Firebase verification fails."""
+
     def _raise(_: str) -> dict[str, object]:
         """Raise an error to simulate invalid token verification."""
         raise ValueError("bad token")
@@ -33,6 +34,7 @@ def test_get_current_user_invalid_token(monkeypatch: pytest.MonkeyPatch) -> None
 
 def test_get_current_user_missing_claims(monkeypatch: pytest.MonkeyPatch) -> None:
     """Return 403 when required claims are missing."""
+
     def _verify(_: str) -> dict[str, object]:
         """Return a decoded payload with missing email."""
         return {"uid": "firebase-uid"}
@@ -49,6 +51,7 @@ def test_get_current_user_missing_claims(monkeypatch: pytest.MonkeyPatch) -> Non
 
 def test_get_current_user_unknown_user(monkeypatch: pytest.MonkeyPatch) -> None:
     """Return 403 when user is not found."""
+
     def _verify(_: str) -> dict[str, object]:
         """Return a valid decoded payload."""
         return {"uid": "firebase-uid", "email": "missing@example.com"}
@@ -75,6 +78,7 @@ def test_get_current_user_unknown_user(monkeypatch: pytest.MonkeyPatch) -> None:
 
 def test_get_current_user_invalid_role(monkeypatch: pytest.MonkeyPatch) -> None:
     """Return 403 when role is not recognized."""
+
     def _verify(_: str) -> dict[str, object]:
         """Return a valid decoded payload."""
         return {"uid": "firebase-uid", "email": "user@example.com"}
@@ -101,6 +105,7 @@ def test_get_current_user_invalid_role(monkeypatch: pytest.MonkeyPatch) -> None:
 
 def test_get_current_user_success(monkeypatch: pytest.MonkeyPatch) -> None:
     """Return an AuthUser when token and role are valid."""
+
     def _verify(_: str) -> dict[str, object]:
         """Return a valid decoded payload."""
         return {"uid": "firebase-uid", "email": "owner@example.com"}
@@ -116,7 +121,7 @@ def test_get_current_user_success(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr("app.auth.dependencies.verify_firebase_token", _verify)
     monkeypatch.setattr("app.auth.dependencies.get_engine", _get_engine)
     monkeypatch.setattr("app.auth.dependencies.get_user_info_by_email", _lookup)
-    
+
     user = get_current_user(_credentials())
 
     assert user.email == "owner@example.com"

@@ -67,7 +67,9 @@ def test_update_firebase_user_calls_admin(monkeypatch: pytest.MonkeyPatch) -> No
 
 def test_generate_password_reset_link_calls_admin(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(firebase_module, "_get_firebase_app", lambda: None)
-    monkeypatch.setattr(firebase_module.auth, "generate_password_reset_link", lambda email: f"link-{email}")
+    monkeypatch.setattr(
+        firebase_module.auth, "generate_password_reset_link", lambda email: f"link-{email}"
+    )
 
     link = firebase_module.generate_password_reset_link("reset@example.com")
 

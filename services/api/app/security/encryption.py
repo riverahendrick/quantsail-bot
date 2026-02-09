@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-import base64
 import os
+
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 
 
@@ -14,18 +14,18 @@ class EncryptionService:
     def __init__(self) -> None:
         key_hex = os.environ.get("MASTER_KEY")
         if not key_hex:
-            # Fallback for dev/test ONLY if explicit flag not set, 
+            # Fallback for dev/test ONLY if explicit flag not set,
             # but per GLOBAL_RULES we shouldn't fail silently or use mocks in prod.
             # We'll raise error if missing.
             raise RuntimeError("MASTER_KEY environment variable is required.")
-        
+
         try:
             self.key = bytes.fromhex(key_hex)
         except ValueError:
-             raise RuntimeError("MASTER_KEY must be a valid hex string.")
+            raise RuntimeError("MASTER_KEY must be a valid hex string.")
 
-        if len(self.key) != 32: # 256 bits
-             raise RuntimeError("MASTER_KEY must be 32 bytes (64 hex chars).")
+        if len(self.key) != 32:  # 256 bits
+            raise RuntimeError("MASTER_KEY must be 32 bytes (64 hex chars).")
 
         self.aesgcm = AESGCM(self.key)
 
@@ -34,7 +34,7 @@ class EncryptionService:
         Encrypt plaintext using AES-GCM.
         Returns (ciphertext, nonce).
         """
-        nonce = os.urandom(12) # NIST recommended 96-bit nonce
+        nonce = os.urandom(12)  # NIST recommended 96-bit nonce
         data = plaintext.encode("utf-8")
         ciphertext = self.aesgcm.encrypt(nonce, data, None)
         return ciphertext, nonce
@@ -46,7 +46,9 @@ class EncryptionService:
         plaintext_bytes = self.aesgcm.decrypt(nonce, ciphertext, None)
         return plaintext_bytes.decode("utf-8")
 
+
 _service: EncryptionService | None = None
+
 
 def get_encryption_service() -> EncryptionService:
     """Singleton accessor."""

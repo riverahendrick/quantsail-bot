@@ -20,6 +20,7 @@ def _insert_user(engine: sa.Engine, email: str, role: str) -> None:
 
 def _mock_verify(email: str) -> Callable[[str], dict[str, str]]:
     """Return a verifier that yields the given email claim."""
+
     def _verify(_: str) -> dict[str, str]:
         """Return a fixed decoded token payload."""
         return {"uid": "firebase-uid", "email": email}

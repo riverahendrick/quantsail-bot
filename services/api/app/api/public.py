@@ -38,7 +38,7 @@ def summary() -> dict[str, object]:
                 "profit_factor_30d": 1.8,
                 "max_drawdown_usd": -500.0,
                 "sharpe_ratio_30d": 1.2,
-                "timestamp": datetime.now(timezone.utc).isoformat()
+                "timestamp": datetime.now(timezone.utc).isoformat(),
             }
         raise
 
@@ -64,17 +64,17 @@ def trades(limit: int | None = Query(None, ge=1, le=500)) -> list[dict[str, obje
                     "quantity": 0.001,
                     "price": 43500.0,
                     "executed_at": datetime.now(timezone.utc).isoformat(),
-                    "realized_pnl_usd": 15.50
+                    "realized_pnl_usd": 15.50,
                 },
                 {
-                    "id": "trade_2", 
+                    "id": "trade_2",
                     "symbol": "BTC/USDT",
                     "side": "sell",
                     "quantity": 0.001,
                     "price": 43750.0,
                     "executed_at": datetime.now(timezone.utc).isoformat(),
-                    "realized_pnl_usd": 2.50
-                }
+                    "realized_pnl_usd": 2.50,
+                },
             ]
         raise
 
@@ -98,15 +98,15 @@ def events(limit: int | None = Query(None, ge=1, le=500)) -> list[dict[str, obje
                     "type": "trade_executed",
                     "level": "info",
                     "message": "BTC/USDT buy order executed",
-                    "timestamp": datetime.now(timezone.utc).isoformat()
+                    "timestamp": datetime.now(timezone.utc).isoformat(),
                 },
                 {
                     "id": "event_2",
-                    "type": "strategy_update", 
+                    "type": "strategy_update",
                     "level": "info",
                     "message": "Trend strategy parameters updated",
-                    "timestamp": datetime.now(timezone.utc).isoformat()
-                }
+                    "timestamp": datetime.now(timezone.utc).isoformat(),
+                },
             ]
         raise
 

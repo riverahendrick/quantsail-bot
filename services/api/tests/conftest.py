@@ -1,4 +1,4 @@
-﻿import os
+import os
 import sys
 from pathlib import Path
 
@@ -11,6 +11,17 @@ from alembic import command
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.append(str(PROJECT_ROOT))
+
+# Manually load .env for tests since python-dotenv is not a dependency
+env_path = PROJECT_ROOT / ".env"
+if env_path.exists():
+    with open(env_path) as f:
+        for line in f:
+            line = line.strip()
+            if line and not line.startswith("#") and "=" in line:
+                key, value = line.split("=", 1)
+                if key not in os.environ:
+                    os.environ[key] = value
 
 
 def _alembic_config() -> Config:

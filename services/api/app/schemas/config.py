@@ -69,7 +69,9 @@ class PositionSizingConfig(BaseModel):
 
     method: Literal["fixed", "risk_pct", "kelly"] = Field(
         default="risk_pct",
-        description="Sizing method: fixed (static qty), risk_pct (ATR-based risk), kelly (Kelly criterion)",
+        description=(
+            "Sizing method: fixed (static qty), risk_pct (ATR-based risk), kelly (Kelly criterion)"
+        ),
     )
     fixed_quantity: float = Field(
         default=0.01,
@@ -128,7 +130,10 @@ class TakeProfitConfig(BaseModel):
 
     method: Literal["fixed_pct", "atr", "risk_reward"] = Field(
         default="risk_reward",
-        description="TP method: fixed_pct (static %), atr (ATR-multiple), risk_reward (ratio of SL). Recommended: risk_reward",
+        description=(
+            "TP method: fixed_pct (static %), atr (ATR-multiple), risk_reward (ratio of SL). "
+            "Recommended: risk_reward"
+        ),
     )
     fixed_pct: float = Field(
         default=4.0,
@@ -159,7 +164,10 @@ class TrailingStopConfig(BaseModel):
     )
     method: Literal["atr", "pct", "chandelier"] = Field(
         default="atr",
-        description="Trailing method: atr (ATR-based), pct (fixed %), chandelier (ATR from high). Recommended: atr",
+        description=(
+            "Trailing method: atr (ATR-based), pct (fixed %), chandelier (ATR from high). "
+            "Recommended: atr"
+        ),
     )
     atr_period: int = Field(
         default=14,
@@ -189,9 +197,15 @@ class TrailingStopConfig(BaseModel):
 
 class TrendStrategyConfig(BaseModel):
     """Configuration for Trend Strategy."""
+
     ema_fast: int = Field(default=20, ge=2, description="Fast EMA period. Recommended: 12-20")
     ema_slow: int = Field(default=50, ge=5, description="Slow EMA period. Recommended: 50-200")
-    adx_threshold: float = Field(default=25.0, ge=0.0, le=100.0, description="Min ADX for trend confirmation. Recommended: 20-30")
+    adx_threshold: float = Field(
+        default=25.0,
+        ge=0.0,
+        le=100.0,
+        description="Min ADX for trend confirmation. Recommended: 20-30",
+    )
 
     @model_validator(mode="after")
     def _ema_fast_lt_slow(self) -> "TrendStrategyConfig":
@@ -204,17 +218,31 @@ class TrendStrategyConfig(BaseModel):
 
 class MeanReversionStrategyConfig(BaseModel):
     """Configuration for Mean Reversion Strategy."""
+
     bb_period: int = Field(default=20, ge=5, description="Bollinger Band period. Recommended: 20")
-    bb_std_dev: float = Field(default=2.0, gt=0.0, description="Bollinger Band std dev multiplier. Recommended: 2.0")
+    bb_std_dev: float = Field(
+        default=2.0, gt=0.0, description="Bollinger Band std dev multiplier. Recommended: 2.0"
+    )
     rsi_period: int = Field(default=14, ge=5, description="RSI period. Recommended: 14")
-    rsi_oversold: float = Field(default=30.0, ge=0.0, le=100.0, description="RSI oversold threshold. Recommended: 25-35")
+    rsi_oversold: float = Field(
+        default=30.0, ge=0.0, le=100.0, description="RSI oversold threshold. Recommended: 25-35"
+    )
 
 
 class BreakoutStrategyConfig(BaseModel):
     """Configuration for Breakout Strategy."""
-    donchian_period: int = Field(default=20, ge=5, description="Donchian Channel period. Recommended: 20")
-    atr_period: int = Field(default=14, ge=5, description="ATR period for volatility filter. Recommended: 14")
-    atr_filter_mult: float = Field(default=1.0, gt=0.0, description="ATR filter multiplier for breakout validation. Recommended: 1.0")
+
+    donchian_period: int = Field(
+        default=20, ge=5, description="Donchian Channel period. Recommended: 20"
+    )
+    atr_period: int = Field(
+        default=14, ge=5, description="ATR period for volatility filter. Recommended: 14"
+    )
+    atr_filter_mult: float = Field(
+        default=1.0,
+        gt=0.0,
+        description="ATR filter multiplier for breakout validation. Recommended: 1.0",
+    )
 
 
 class VWAPReversionConfig(BaseModel):
@@ -256,7 +284,57 @@ class MACDStrategyConfig(BaseModel):
 
     fast_period: int = Field(default=12, ge=2, description="MACD fast EMA period. Recommended: 12")
     slow_period: int = Field(default=26, ge=5, description="MACD slow EMA period. Recommended: 26")
-    signal_period: int = Field(default=9, ge=2, description="MACD signal line period. Recommended: 9")
+    signal_period: int = Field(
+        default=9, ge=2, description="MACD signal line period. Recommended: 9"
+    )
+
+
+class PerCoinStrategyOverride(BaseModel):
+    """Per-symbol strategy weight overrides for per-coin routing.
+
+    When set, these weights override the global ensemble weights for a
+    specific trading symbol. Fields left as None fall back to the global value.
+
+    Example: To route XRP through trend-only:
+        PerCoinStrategyOverride(
+            weight_trend=1.0,
+            weight_mean_reversion=0.0,
+            weight_breakout=0.0,
+            weight_vwap=0.0,
+        )
+    """
+
+    weight_trend: float | None = Field(
+        default=None, ge=0.0, le=1.0,
+        description="Override trend weight for this symbol (None = use global)",
+    )
+    weight_mean_reversion: float | None = Field(
+        default=None, ge=0.0, le=1.0,
+        description="Override mean reversion weight for this symbol (None = use global)",
+    )
+    weight_breakout: float | None = Field(
+        default=None, ge=0.0, le=1.0,
+        description="Override breakout weight for this symbol (None = use global)",
+    )
+    weight_vwap: float | None = Field(
+        default=None, ge=0.0, le=1.0,
+        description="Override VWAP weight for this symbol (None = use global)",
+    )
+    min_agreement: int | None = Field(
+        default=None, ge=1,
+        description="Override min_agreement for this symbol (None = use global)",
+    )
+    confidence_threshold: float | None = Field(
+        default=None, ge=0.0, le=1.0,
+        description="Override confidence_threshold for this symbol (None = use global)",
+    )
+    weighted_threshold: float | None = Field(
+        default=None, ge=0.0, le=1.0,
+        description="Override weighted_threshold for this symbol (None = use global)",
+    )
+
+    class Config:
+        frozen = True
 
 
 class EnsembleConfig(BaseModel):
@@ -264,8 +342,13 @@ class EnsembleConfig(BaseModel):
 
     mode: Literal["agreement", "weighted"] = Field(
         default="agreement",
-        description="Ensemble mode: agreement (min N agree), weighted (weighted score). Recommended: weighted",
+        description=(
+            "Ensemble mode: agreement (min N agree), weighted (weighted score). Recommended: weighted"
+        ),
     )
+
+
+
     min_agreement: int = Field(
         default=2,
         ge=1,
@@ -307,10 +390,19 @@ class EnsembleConfig(BaseModel):
         le=1.0,
         description="Weight for VWAP reversion strategy (weighted mode). Recommended: 0.20-0.30",
     )
+    per_coin_overrides: dict[str, PerCoinStrategyOverride] = Field(
+        default_factory=dict,
+        description=(
+            "Per-symbol strategy weight overrides. Keys are symbol names "
+            "(e.g. 'XRP', 'BNB'). Values override the global ensemble weights "
+            "for that symbol. Unspecified symbols use global weights."
+        ),
+    )
 
 
 class SymbolRegimeOverride(BaseModel):
     """Per-symbol overrides for regime filter thresholds."""
+
     adx_threshold: float | None = Field(
         default=None,
         ge=0.0,
@@ -326,19 +418,22 @@ class SymbolRegimeOverride(BaseModel):
 
 class RegimeConfig(BaseModel):
     """Configuration for Market Regime Filtering."""
+
     enabled: bool = Field(default=True, description="Enable regime filtering to avoid chop")
     adx_period: int = Field(default=14, ge=5, description="ADX period. Recommended: 14")
     adx_threshold: float = Field(
         default=25.0,
         ge=0.0,
         le=100.0,
-        description="Min ADX to consider market trending. Recommended: 20-25"
+        description="Min ADX to consider market trending. Recommended: 20-25",
     )
     atr_period: int = Field(default=14, ge=5, description="ATR period. Recommended: 14")
     atr_threshold_pct: float = Field(
         default=0.5,
         ge=0.0,
-        description="Min ATR% (ATR/Close * 100) to consider market volatile. Recommended: 0.5-1.0%"
+        description=(
+            "Min ATR% (ATR/Close * 100) to consider market volatile. Recommended: 0.5-1.0%"
+        ),
     )
     per_symbol_overrides: dict[str, SymbolRegimeOverride] = Field(
         default_factory=dict,
@@ -348,6 +443,7 @@ class RegimeConfig(BaseModel):
 
 class StrategiesConfig(BaseModel):
     """Container for all strategy configurations."""
+
     trend: TrendStrategyConfig = Field(default_factory=TrendStrategyConfig)
     mean_reversion: MeanReversionStrategyConfig = Field(default_factory=MeanReversionStrategyConfig)
     breakout: BreakoutStrategyConfig = Field(default_factory=BreakoutStrategyConfig)
@@ -359,6 +455,7 @@ class StrategiesConfig(BaseModel):
 
 class VolatilityBreakerConfig(BaseModel):
     """Configuration for volatility spike breaker."""
+
     enabled: bool = Field(default=True, description="Enable volatility spike breaker")
     atr_multiple_pause: float = Field(
         default=3.0,
@@ -374,6 +471,7 @@ class VolatilityBreakerConfig(BaseModel):
 
 class SpreadSlippageBreakerConfig(BaseModel):
     """Configuration for spread/slippage spike breaker."""
+
     enabled: bool = Field(default=True, description="Enable spread/slippage spike breaker")
     max_spread_bps: float = Field(
         default=50.0,
@@ -389,6 +487,7 @@ class SpreadSlippageBreakerConfig(BaseModel):
 
 class ConsecutiveLossesBreakerConfig(BaseModel):
     """Configuration for consecutive losses breaker."""
+
     enabled: bool = Field(default=True, description="Enable consecutive losses breaker")
     max_losses: int = Field(
         default=3,
@@ -404,6 +503,7 @@ class ConsecutiveLossesBreakerConfig(BaseModel):
 
 class ExchangeInstabilityBreakerConfig(BaseModel):
     """Configuration for exchange instability breaker."""
+
     enabled: bool = Field(default=True, description="Enable exchange instability breaker")
     max_disconnects_5m: int = Field(
         default=5,
@@ -419,6 +519,7 @@ class ExchangeInstabilityBreakerConfig(BaseModel):
 
 class NewsPauseConfig(BaseModel):
     """Configuration for news-based pause (stub for MVP)."""
+
     enabled: bool = Field(default=False, description="Enable news-based pause (MVP stub)")
     provider: str = Field(default="newsapi", description="News provider (stub)")
     impact_threshold: str = Field(default="high", description="Impact threshold (stub)")
@@ -431,6 +532,7 @@ class NewsPauseConfig(BaseModel):
 
 class DailyConfig(BaseModel):
     """Daily profit target and lock configuration."""
+
     enabled: bool = Field(default=True, description="Enable daily target lock")
     target_usd: float = Field(
         default=50.0,
@@ -454,6 +556,7 @@ class DailyConfig(BaseModel):
 
 class PortfolioConfig(BaseModel):
     """Portfolio-level risk constraints."""
+
     max_correlated_positions: int = Field(
         default=1,
         ge=1,
@@ -479,9 +582,8 @@ class PortfolioConfig(BaseModel):
 
 class BreakerConfig(BaseModel):
     """Container for all circuit breaker configurations."""
-    volatility: VolatilityBreakerConfig = Field(
-        default_factory=VolatilityBreakerConfig
-    )
+
+    volatility: VolatilityBreakerConfig = Field(default_factory=VolatilityBreakerConfig)
     spread_slippage: SpreadSlippageBreakerConfig = Field(
         default_factory=SpreadSlippageBreakerConfig
     )
@@ -496,6 +598,7 @@ class BreakerConfig(BaseModel):
 
 class CooldownConfig(BaseModel):
     """Configuration for stop-loss cooldown gate."""
+
     enabled: bool = Field(default=True, description="Enable cooldown after stop-loss exits")
     cooldown_minutes: int = Field(
         default=360,
@@ -506,6 +609,7 @@ class CooldownConfig(BaseModel):
 
 class DailySymbolLimitConfig(BaseModel):
     """Configuration for daily per-symbol consecutive loss limit."""
+
     enabled: bool = Field(default=True, description="Enable daily per-symbol loss limit")
     max_consecutive_losses: int = Field(
         default=2,
@@ -516,7 +620,10 @@ class DailySymbolLimitConfig(BaseModel):
 
 class StreakSizerConfig(BaseModel):
     """Configuration for losing streak position size reduction."""
-    enabled: bool = Field(default=True, description="Enable position size reduction on losing streaks")
+
+    enabled: bool = Field(
+        default=True, description="Enable position size reduction on losing streaks"
+    )
     reduction_factor: float = Field(
         default=0.5,
         gt=0.0,
@@ -527,6 +634,49 @@ class StreakSizerConfig(BaseModel):
         default=2,
         ge=1,
         description="Consecutive losses before reduction kicks in. Recommended: 2",
+    )
+
+
+class GridSymbolConfig(BaseModel):
+    """Per-symbol grid trading configuration."""
+
+    enabled: bool = Field(default=True, description="Enable grid trading for this symbol")
+    lower_pct: float = Field(
+        default=5.0, gt=0.0, le=50.0,
+        description="Grid lower bound as pct below reference price. E.g. 5.0 = -5%",
+    )
+    upper_pct: float = Field(
+        default=5.0, gt=0.0, le=50.0,
+        description="Grid upper bound as pct above reference price. E.g. 5.0 = +5%",
+    )
+    num_grids: int = Field(
+        default=15, ge=3, le=500,
+        description="Number of grid levels. More grids = more trades, smaller profit each",
+    )
+    allocation_usd: float = Field(
+        default=1000.0, gt=0.0,
+        description="Capital allocated to this symbol's grid",
+    )
+    rebalance_on_breakout: bool = Field(
+        default=True,
+        description="Auto-shift grid if price breaks out of range",
+    )
+
+
+class GridConfig(BaseModel):
+    """Grid trading configuration for consistent daily income."""
+
+    enabled: bool = Field(default=False, description="Enable grid trading layer")
+    fee_pct: float = Field(
+        default=0.1, ge=0.0, le=5.0,
+        description="Trading fee per side in percent (e.g. 0.1 = 0.1%)",
+    )
+    symbols: dict[str, GridSymbolConfig] = Field(
+        default_factory=dict,
+        description=(
+            "Per-symbol grid configs. Keys are symbol names (e.g. 'BTC'). "
+            "Grid bots run independently on each configured symbol."
+        ),
     )
 
 
@@ -549,12 +699,9 @@ class BotConfig(BaseModel):
     take_profit: TakeProfitConfig = Field(default_factory=TakeProfitConfig)
     trailing_stop: TrailingStopConfig = Field(default_factory=TrailingStopConfig)
     cooldown: CooldownConfig = Field(default_factory=CooldownConfig)
-    daily_symbol_limit: DailySymbolLimitConfig = Field(
-        default_factory=DailySymbolLimitConfig
-    )
-    streak_sizer: StreakSizerConfig = Field(
-        default_factory=StreakSizerConfig
-    )
+    daily_symbol_limit: DailySymbolLimitConfig = Field(default_factory=DailySymbolLimitConfig)
+    streak_sizer: StreakSizerConfig = Field(default_factory=StreakSizerConfig)
+    grid: GridConfig = Field(default_factory=GridConfig)
 
     @model_validator(mode="after")
     def _validate_risk_coherence(self) -> "BotConfig":

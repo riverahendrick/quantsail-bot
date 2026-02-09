@@ -59,7 +59,9 @@ def get_strategy_performance() -> list[dict[str, Any]]:
 
     # Profit factor: gross profit / gross loss
     gross_profit: float = max(float(total_pnl), 0.0)
-    gross_loss: float = float(abs(total_fees)) if total_pnl >= 0 else float(abs(total_pnl)) + float(total_fees)
+    gross_loss: float = (
+        float(abs(total_fees)) if total_pnl >= 0 else float(abs(total_pnl)) + float(total_fees)
+    )
     profit_factor = (gross_profit / gross_loss) if gross_loss > 0 else 0.0
 
     avg_trade = (total_pnl / total_trades) if total_trades > 0 else 0.0
@@ -72,16 +74,18 @@ def get_strategy_performance() -> list[dict[str, Any]]:
             if last_signal_at is None or lu > last_signal_at:
                 last_signal_at = lu
 
-    return [{
-        "name": "Grid Trading",
-        "enabled": len(coins) > 0,
-        "total_trades": total_trades,
-        "win_rate": win_rate,
-        "profit_factor": profit_factor,
-        "net_pnl_usd": total_pnl - total_fees,
-        "avg_trade_usd": avg_trade,
-        "last_signal_at": last_signal_at,
-    }]
+    return [
+        {
+            "name": "Grid Trading",
+            "enabled": len(coins) > 0,
+            "total_trades": total_trades,
+            "win_rate": win_rate,
+            "profit_factor": profit_factor,
+            "net_pnl_usd": total_pnl - total_fees,
+            "avg_trade_usd": avg_trade,
+            "last_signal_at": last_signal_at,
+        }
+    ]
 
 
 def get_portfolio_risk() -> dict[str, Any]:
@@ -236,26 +240,28 @@ def get_grid_portfolio() -> dict[str, Any]:
         active_orders = sum(1 for lv in levels if lv.get("order_id"))
         filled_levels = sum(1 for lv in levels if lv.get("holding", 0) > 0)
 
-        coins_list.append({
-            "symbol": symbol,
-            "pair": coin.get("pair", f"{symbol}/USDT"),
-            "allocation_usd": coin.get("allocation_usd", 0),
-            "cash": coin.get("cash", 0),
-            "grid_center": coin.get("grid_center", 0),
-            "num_grids": coin.get("num_grids", 0),
-            "lower_pct": coin.get("lower_pct", 0),
-            "upper_pct": coin.get("upper_pct", 0),
-            "total_buys": buys,
-            "total_sells": sells,
-            "total_pnl": pnl,
-            "total_fees": fees,
-            "net_pnl": pnl - fees,
-            "active_orders": active_orders,
-            "filled_levels": filled_levels,
-            "total_levels": len(levels),
-            "num_rebalances": coin.get("num_rebalances", 0),
-            "last_updated": coin.get("last_updated"),
-        })
+        coins_list.append(
+            {
+                "symbol": symbol,
+                "pair": coin.get("pair", f"{symbol}/USDT"),
+                "allocation_usd": coin.get("allocation_usd", 0),
+                "cash": coin.get("cash", 0),
+                "grid_center": coin.get("grid_center", 0),
+                "num_grids": coin.get("num_grids", 0),
+                "lower_pct": coin.get("lower_pct", 0),
+                "upper_pct": coin.get("upper_pct", 0),
+                "total_buys": buys,
+                "total_sells": sells,
+                "total_pnl": pnl,
+                "total_fees": fees,
+                "net_pnl": pnl - fees,
+                "active_orders": active_orders,
+                "filled_levels": filled_levels,
+                "total_levels": len(levels),
+                "num_rebalances": coin.get("num_rebalances", 0),
+                "last_updated": coin.get("last_updated"),
+            }
+        )
 
     return {
         "active": len(coins_list) > 0,

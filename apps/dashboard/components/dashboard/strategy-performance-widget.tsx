@@ -114,7 +114,7 @@ export function StrategyPerformanceWidget() {
                                     <div>
                                         <div className="text-zinc-500 text-xs">{t("winRate")}</div>
                                         <div className="font-mono text-white">
-                                            {formatPct(strategy.win_rate)}
+                                            {formatPct(strategy.win_rate)} {t("totalTradesParentheses", { count: strategy.total_trades })}
                                         </div>
                                     </div>
                                     <div>

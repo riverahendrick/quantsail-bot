@@ -21,6 +21,7 @@ def _insert_user(engine: sa.Engine, email: str, role: str) -> None:
 
 def _patch_auth(monkeypatch: pytest.MonkeyPatch, email: str) -> None:
     """Patch Firebase verification for WS tests."""
+
     def _verify(_: str) -> dict[str, str]:
         """Return a decoded token payload."""
         return {"uid": "firebase-uid", "email": email}
@@ -98,6 +99,7 @@ def test_ws_rejects_forbidden_role(
 
 def test_ws_handles_auth_exception(monkeypatch: pytest.MonkeyPatch) -> None:
     """Return a server error close code for auth failures."""
+
     def _fail(_: object) -> None:
         raise RuntimeError("boom")
 

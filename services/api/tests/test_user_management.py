@@ -62,7 +62,9 @@ def test_create_user_creates_db_and_reset_link(
     assert payload["password_reset_link"] == "https://reset-link"
 
     with migrated_engine.connect() as conn:
-        stored = conn.execute(sa.select(User).where(User.email == "new@example.com")).mappings().one()
+        stored = (
+            conn.execute(sa.select(User).where(User.email == "new@example.com")).mappings().one()
+        )
     assert stored["role"] == "DEVELOPER"
 
 
@@ -108,6 +110,7 @@ def test_create_user_with_existing_firebase_record(
     assert payload["email"] == "existing@example.com"
     assert payload["role"] == "ADMIN"
     assert payload["password_reset_link"] == "https://reset-link"
+
 
 def test_list_users_includes_disabled_status(
     migrated_engine: sa.Engine, monkeypatch: pytest.MonkeyPatch

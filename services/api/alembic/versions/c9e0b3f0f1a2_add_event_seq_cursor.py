@@ -5,6 +5,7 @@ Revises: b581045cf266
 Create Date: 2026-01-27 00:00:00.000000
 
 """
+
 from typing import Sequence, Union
 
 import sqlalchemy as sa
@@ -22,9 +23,7 @@ def upgrade() -> None:
     """Add monotonic seq cursor to events."""
     op.execute("CREATE SEQUENCE IF NOT EXISTS events_seq_seq")
     op.add_column("events", sa.Column("seq", sa.BigInteger(), nullable=True))
-    op.execute(
-        "ALTER TABLE events ALTER COLUMN seq SET DEFAULT nextval('events_seq_seq')"
-    )
+    op.execute("ALTER TABLE events ALTER COLUMN seq SET DEFAULT nextval('events_seq_seq')")
     op.execute("ALTER SEQUENCE events_seq_seq OWNED BY events.seq")
     op.execute("UPDATE events SET seq = nextval('events_seq_seq') WHERE seq IS NULL")
     op.alter_column("events", "seq", nullable=False)

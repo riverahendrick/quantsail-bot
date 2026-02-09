@@ -14,8 +14,8 @@ API_ROOT = PROJECT_ROOT.parent / "api"
 if str(PROJECT_ROOT) not in sys.path:  # pragma: no cover
     sys.path.append(str(PROJECT_ROOT))
 
-if str(API_ROOT) not in sys.path:
-    sys.path.append(str(API_ROOT))
+# if str(API_ROOT) not in sys.path:
+#     sys.path.append(str(API_ROOT))
 
 # Note: API service path NOT added - tests use stub models only
 # When API service is fully implemented, engine will import from app.db.models

@@ -51,6 +51,7 @@ def test_send_heartbeat() -> None:
 
 def test_get_ws_user_maps_http_errors(monkeypatch: pytest.MonkeyPatch) -> None:
     """Map HTTP auth errors to WebSocket exceptions."""
+
     def _fail(_: str) -> AuthUser:
         raise HTTPException(status_code=401, detail={"code": "AUTH_REQUIRED"})
 

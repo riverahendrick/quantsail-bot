@@ -134,9 +134,7 @@ def test_ingest_with_custom_pause_duration(
     reset_news_cache()
 
 
-def test_clear_news_pause(
-    migrated_engine: sa.Engine, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_clear_news_pause(migrated_engine: sa.Engine, monkeypatch: pytest.MonkeyPatch) -> None:
     """Test manually clearing news pause."""
     reset_news_cache()
     client = _authorized_client(migrated_engine, monkeypatch)

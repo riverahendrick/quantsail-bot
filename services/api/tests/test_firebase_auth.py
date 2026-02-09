@@ -38,9 +38,7 @@ def test_get_firebase_app_initializes(monkeypatch: pytest.MonkeyPatch) -> None:
         return sentinel_app
 
     monkeypatch.setattr("app.auth.firebase.firebase_admin.get_app", _get_app)
-    monkeypatch.setattr(
-        "app.auth.firebase.credentials.ApplicationDefault", _application_default
-    )
+    monkeypatch.setattr("app.auth.firebase.credentials.ApplicationDefault", _application_default)
     monkeypatch.setattr("app.auth.firebase.firebase_admin.initialize_app", _init_app)
 
     assert firebase_module._get_firebase_app() is sentinel_app
