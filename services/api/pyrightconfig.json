@@ -1,0 +1,11 @@
+{
+    "pythonVersion": "3.12",
+    "pythonPlatform": "Windows",
+    "extraPaths": [
+        ".",
+        "../engine"
+    ],
+    "reportMissingImports": "none",
+    "reportMissingModuleSource": "none",
+    "typeCheckingMode": "basic"
+}

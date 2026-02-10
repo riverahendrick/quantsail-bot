@@ -10,6 +10,7 @@ from quantsail_engine.config.models import (
     BotConfig,
     EnsembleConfig,
     ExecutionConfig,
+    RegimeConfig,
     StrategiesConfig,
 )
 from quantsail_engine.core.state_machine import TradingState
@@ -25,7 +26,8 @@ def test_integration_profitability_gate_rejects(in_memory_db: Session) -> None:
     config = BotConfig(
         execution=ExecutionConfig(min_profit_usd=1000.0, taker_fee_bps=10.0),
         strategies=StrategiesConfig(
-            ensemble=EnsembleConfig(min_agreement=1, confidence_threshold=0.0)
+            ensemble=EnsembleConfig(min_agreement=1, confidence_threshold=0.0),
+            regime=RegimeConfig(enabled=False),
         )
     )
     
@@ -106,7 +108,8 @@ def test_integration_max_positions_rejection(in_memory_db: Session) -> None:
     # Max positions = 1. We need to fill it first.
     from quantsail_engine.config.models import SymbolsConfig
     config = BotConfig(
-        symbols=SymbolsConfig(enabled=["BTC/USDT"], max_concurrent_positions=1)
+        symbols=SymbolsConfig(enabled=["BTC/USDT"], max_concurrent_positions=1),
+        strategies=StrategiesConfig(regime=RegimeConfig(enabled=False)),
     )
     
     signals = MagicMock(spec=EnsembleSignalProvider)
@@ -182,7 +185,9 @@ def test_integration_entry_execution_failure_recovery(in_memory_db: Session) -> 
 
 def test_gate_breaker_rejects_entry(in_memory_db: Session) -> None:
     """Test that active circuit breaker rejects entry with event."""
-    config = BotConfig()
+    config = BotConfig(
+        strategies=StrategiesConfig(regime=RegimeConfig(enabled=False)),
+    )
     market_data = StubMarketDataProvider(base_price=50000.0)
     signals = MagicMock(spec=EnsembleSignalProvider)
 
@@ -300,7 +305,9 @@ def test_gate_spread_breaker_triggers(in_memory_db: Session) -> None:
 
 def test_gate_consecutive_losses_breaker_triggers(in_memory_db: Session) -> None:
     """Test consecutive losses breaker triggers during trade planning."""
-    config = BotConfig()
+    config = BotConfig(
+        strategies=StrategiesConfig(regime=RegimeConfig(enabled=False)),
+    )
     signals = MagicMock(spec=EnsembleSignalProvider)
 
     from quantsail_engine.models.signal import Signal, SignalType
@@ -337,11 +344,11 @@ def test_gate_consecutive_losses_breaker_triggers(in_memory_db: Session) -> None
             side="LONG",
             entry_price=100.0,
             entry_qty=0.01,
+            entry_notional_usd=1.0,
             opened_at=datetime.now(timezone.utc),
             closed_at=datetime.now(timezone.utc),
             exit_price=98.0,
             realized_pnl_usd=-2.0,
-            # pnl_pct=-2.0, # Removed as per new model?
         )
         in_memory_db.add(trade)
     in_memory_db.commit()

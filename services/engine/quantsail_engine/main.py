@@ -10,6 +10,8 @@ from quantsail_engine.config.loader import load_config
 from quantsail_engine.core.trading_loop import TradingLoop
 from quantsail_engine.execution.dry_run_executor import DryRunExecutor
 from quantsail_engine.market_data.stub_provider import StubMarketDataProvider
+from quantsail_engine.market_data.binance_provider import BinanceMarketDataProvider
+from quantsail_engine.cache.control import get_control_plane, BotState
 from quantsail_engine.monitoring.sentry_service import SentryConfig, init_sentry, get_sentry
 from quantsail_engine.security.encryption import EncryptionService
 from quantsail_engine.signals.ensemble_provider import EnsembleSignalProvider
@@ -76,35 +78,63 @@ def main() -> int:
 
     # Initialize components
     logger.info("🔧 Initializing trading components...")
-    market_data_provider = StubMarketDataProvider(base_price=50000.0)
+
     # Use EnsembleProvider by default
     signal_provider = EnsembleSignalProvider(config)
-    
+
+    # Execution + market data provider setup
+    testnet = os.environ.get("BINANCE_TESTNET", "false").lower() == "true"
+    market_data_source = os.environ.get("QUANTSAIL_MARKET_DATA_PROVIDER", "stub")
+
     if config.execution.mode == "live":
         from quantsail_engine.execution.binance_adapter import BinanceSpotAdapter
         from quantsail_engine.execution.live_executor import LiveExecutor
         from quantsail_engine.persistence.repository import EngineRepository
-        
+
         repo = EngineRepository(session)
         encryption = EncryptionService()
         credentials = repo.get_active_exchange_credentials("binance", encryption)
 
         api_key = credentials.api_key if credentials else os.environ.get("BINANCE_API_KEY")
         secret = credentials.secret_key if credentials else os.environ.get("BINANCE_SECRET")
-        testnet = os.environ.get("BINANCE_TESTNET", "false").lower() == "true"
-        
+
         if not api_key or not secret:
             logger.error(
                 "❌ Live mode requires active exchange keys (dashboard) or BINANCE_API_KEY/BINANCE_SECRET"
             )
             return 1
-            
+
         adapter = BinanceSpotAdapter(api_key, secret, testnet=testnet)
         execution_engine = LiveExecutor(repo, adapter)
         logger.info(f"✅ Live execution enabled (Testnet: {testnet})")
+
+        # In live mode, reuse exchange instance for market data when requested
+        if market_data_source == "binance":
+            market_data_provider = BinanceMarketDataProvider(adapter.client)
+            logger.info("✅ Market data: Binance (live exchange instance)")
+        else:
+            market_data_provider = StubMarketDataProvider(base_price=50000.0)
+            logger.info("⚠️ Market data: Stub (live mode with stub data)")
     else:
         execution_engine = DryRunExecutor()
         logger.info("✅ Dry-run execution enabled")
+
+        # In dry-run, allow real market data for paper trading with live prices
+        if market_data_source == "binance":
+            import ccxt
+            exchange = ccxt.binance({"enableRateLimit": True})
+            if testnet:
+                exchange.set_sandbox_mode(True)
+            market_data_provider = BinanceMarketDataProvider(exchange)
+            logger.info("✅ Market data: Binance (dry-run with real prices)")
+        else:
+            market_data_provider = StubMarketDataProvider(base_price=50000.0)
+            logger.info("✅ Market data: Stub (deterministic)")
+
+    # Initialize control plane
+    redis_url = os.environ.get("REDIS_URL")
+    control_plane = get_control_plane(redis_url)
+    logger.info("✅ Control plane initialized")
 
     # Create trading loop
     trading_loop = TradingLoop(
@@ -113,8 +143,13 @@ def main() -> int:
         market_data_provider=market_data_provider,
         signal_provider=signal_provider,
         execution_engine=execution_engine,
+        control_plane=control_plane,
     )
     logger.info("✅ Trading loop initialized")
+
+    # Set bot state to RUNNING
+    control_plane.set_state(BotState.RUNNING)
+    logger.info("✅ Bot state set to RUNNING")
 
     # Run the loop
     try:

@@ -57,7 +57,7 @@ def clean_config_env() -> Generator[None, None, None]:
     for key in keys_to_clear:
         if key in os.environ:
             original_env[key] = os.environ[key]
-            del os.environ[key]
+            os.environ.pop(key, None)
             
     yield
     

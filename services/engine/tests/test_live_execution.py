@@ -19,6 +19,12 @@ def mock_repo():
 @pytest.fixture
 def mock_adapter():
     adapter = MagicMock()
+    # Default: OCO placement succeeds
+    adapter.create_oco_order.return_value = {
+        "tp_order_id": "tp-1",
+        "sl_order_id": "sl-1",
+        "oco_mode": "native",
+    }
     return adapter
 
 
@@ -59,13 +65,16 @@ def test_execute_entry_success(executor, mock_repo, mock_adapter):
     orders = result["orders"]
     assert trade["id"] == "uuid-123"
     assert orders[0]["exchange_order_id"] == "exchange-order-999"
-    
+
     # Verify idempotency key was used
     mock_adapter.create_order.assert_called_once()
     call_args = mock_adapter.create_order.call_args
     assert call_args.kwargs["client_order_id"] == "QS-uuid-123-ENTRY"
-    
+
     assert trade["entry_price"] == 50006.0  # From average fill
+
+    # Verify OCO was placed for protective orders
+    mock_adapter.create_oco_order.assert_called_once()
 
 
 def test_execute_entry_idempotency_hit(executor, mock_repo, mock_adapter):
@@ -161,7 +170,8 @@ def test_reconcile_state(executor, mock_repo, mock_adapter):
         payload={
             "symbol": "BTC/USDT",
             "db_open_trade": "trade-1",
-            "exchange_open_orders": 1
+            "exchange_open_orders": 1,
+            "matched_protective_orders": 0,
         },
         public_safe=False
     )

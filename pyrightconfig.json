@@ -5,6 +5,21 @@
         "services/engine",
         "services/api"
     ],
+    "executionEnvironments": [
+        {
+            "root": "services/engine",
+            "extraPaths": [
+                "."
+            ]
+        },
+        {
+            "root": "services/api",
+            "extraPaths": [
+                ".",
+                "../engine"
+            ]
+        }
+    ],
     "exclude": [
         "**/node_modules",
         "**/__pycache__",

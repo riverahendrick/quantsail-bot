@@ -2,7 +2,7 @@
 
 from sqlalchemy.orm import Session
 
-from quantsail_engine.config.models import BotConfig
+from quantsail_engine.config.models import BotConfig, RegimeConfig, StrategiesConfig
 from quantsail_engine.core.trading_loop import TradingLoop
 from quantsail_engine.execution.dry_run_executor import DryRunExecutor
 from quantsail_engine.market_data.stub_provider import StubMarketDataProvider
@@ -31,7 +31,10 @@ def test_trading_loop_enter_long_profitability_pass(in_memory_db: Session) -> No
     """Test ENTER_LONG signal with profitability gate passing."""
     from quantsail_engine.config.models import ExecutionConfig
 
-    config = BotConfig(execution=ExecutionConfig(min_profit_usd=0.01))
+    config = BotConfig(
+        execution=ExecutionConfig(min_profit_usd=0.01),
+        strategies=StrategiesConfig(regime=RegimeConfig(enabled=False)),
+    )
     market_data = StubMarketDataProvider(base_price=50000.0)
     signals = StubSignalProvider()
     signals.set_next_signal(SignalType.ENTER_LONG)
@@ -72,7 +75,10 @@ def test_trading_loop_full_lifecycle_take_profit(in_memory_db: Session) -> None:
     """Test full trade lifecycle with TP hit (simplified)."""
     from quantsail_engine.config.models import ExecutionConfig
 
-    config = BotConfig(execution=ExecutionConfig(min_profit_usd=0.01))
+    config = BotConfig(
+        execution=ExecutionConfig(min_profit_usd=0.01),
+        strategies=StrategiesConfig(regime=RegimeConfig(enabled=False)),
+    )
     signals = StubSignalProvider()
     executor = DryRunExecutor()
     market_data = StubMarketDataProvider(base_price=50000.0)
@@ -95,7 +101,10 @@ def test_trading_loop_full_lifecycle_stop_loss(in_memory_db: Session) -> None:
     """Test trade entry verified (exit logic tested separately)."""
     from quantsail_engine.config.models import ExecutionConfig
 
-    config = BotConfig(execution=ExecutionConfig(min_profit_usd=0.01))
+    config = BotConfig(
+        execution=ExecutionConfig(min_profit_usd=0.01),
+        strategies=StrategiesConfig(regime=RegimeConfig(enabled=False)),
+    )
     signals = StubSignalProvider()
     executor = DryRunExecutor()
     market_data = StubMarketDataProvider(base_price=50000.0)
@@ -158,6 +167,7 @@ def test_trading_loop_max_positions_gate(in_memory_db: Session) -> None:
     config = BotConfig(
         execution=ExecutionConfig(min_profit_usd=0.01),
         symbols=SymbolsConfig(enabled=["BTC/USDT", "ETH/USDT"], max_concurrent_positions=1),
+        strategies=StrategiesConfig(regime=RegimeConfig(enabled=False)),
     )
     market_data = StubMarketDataProvider(base_price=50000.0)
     signals = StubSignalProvider()

@@ -35,6 +35,13 @@ from quantsail_engine.risk.dynamic_sizer import DynamicSizer
 from quantsail_engine.risk.trailing_stop import TrailingStopManager
 from quantsail_engine.signals.provider import SignalProvider
 
+# Control plane is optional so existing usage doesn't break
+try:
+    from quantsail_engine.cache.control import ControlPlane, BotState
+    _HAS_CONTROL_PLANE = True
+except ImportError:
+    _HAS_CONTROL_PLANE = False
+
 logger = logging.getLogger(__name__)
 
 
@@ -48,6 +55,7 @@ class TradingLoop:
         market_data_provider: MarketDataProvider,
         signal_provider: SignalProvider,
         execution_engine: ExecutionEngine,
+        control_plane: Any | None = None,
     ):
         """
         Initialize trading loop.
@@ -58,12 +66,14 @@ class TradingLoop:
             market_data_provider: Market data provider
             signal_provider: Signal provider
             execution_engine: Execution engine
+            control_plane: Optional control plane for lifecycle state checks
         """
         self.config = config
         self.repo = EngineRepository(session)
         self.market_data_provider = market_data_provider
         self.signal_provider = signal_provider
         self.execution_engine = execution_engine
+        self.control_plane = control_plane
 
         # Initialize profitability gate
         self.profitability_gate = ProfitabilityGate(
@@ -110,16 +120,33 @@ class TradingLoop:
     def tick(self) -> None:
         """Execute one tick of the trading loop for all symbols."""
         logger.info("📊 Tick started")
+
+        # Control plane gate
+        if self.control_plane is not None:
+            self.control_plane.heartbeat()
+            state = self.control_plane.get_state()
+            entries_allowed = self.control_plane.is_entries_allowed()
+            exits_allowed = self.control_plane.is_exits_allowed()
+            logger.info("Control plane: state=%s, entries=%s, exits=%s", state, entries_allowed, exits_allowed)
+
+            if not exits_allowed:
+                # STOPPED state: no entries, no exit processing
+                logger.info("Bot is STOPPED — skipping tick entirely")
+                return
+        else:
+            entries_allowed = True
+            exits_allowed = True
+
         for symbol in self.config.symbols.enabled:
             logger.info(f"  Symbol: {symbol}")
-            self._tick_symbol(symbol)
+            self._tick_symbol(symbol, entries_allowed=entries_allowed)
 
         # Update equity snapshot after all symbols processed
         equity = self.repo.calculate_equity(self.config.risk.starting_cash_usd)
         self.repo.save_equity_snapshot(equity)
         logger.info(f"  Equity: ${equity:.2f}")
 
-    def _tick_symbol(self, symbol: str) -> None:
+    def _tick_symbol(self, symbol: str, *, entries_allowed: bool = True) -> None:
         """
         Execute one tick for a specific symbol.
 
@@ -128,6 +155,7 @@ class TradingLoop:
 
         Args:
             symbol: Trading symbol
+            entries_allowed: Whether new entries should be evaluated
         """
         sm = self.state_machines[symbol]
 
