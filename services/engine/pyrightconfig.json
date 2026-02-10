@@ -1,7 +1,7 @@
 {
     "pythonVersion": "3.12",
     "pythonPlatform": "Windows",
-    "venvPath": "",
+    "pythonPath": "C:\\Users\\Hendrick\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
     "extraPaths": [
         "."
     ],
