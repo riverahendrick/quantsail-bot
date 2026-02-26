@@ -31,13 +31,7 @@ function getMockResponse<T>(endpoint: string, options: RequestInit = {}): Promis
 
     // Endpoint-to-mock-data map for GET requests
     const mocks: Record<string, unknown> = {
-        "/v1/config": {
-            version: 3,
-            config_hash: "a1b2c3d4e5f6",
-            is_active: true,
-            created_at: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
-            config_json: MOCK_BOT_CONFIG,
-        },
+        "/v1/config": MOCK_BOT_CONFIG,
         "/v1/exchanges/binance/keys/status": MOCK_EXCHANGE_KEYS,
         "/v1/users": MOCK_USERS,
         "/v1/events": MOCK_EVENTS,

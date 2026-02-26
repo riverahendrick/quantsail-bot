@@ -131,6 +131,12 @@ export default function RiskPage() {
                     </div>
                 </GlowCard>
             </div>
+
+            {/* Risk Portfolio & Kill Switch */}
+            <div className="grid gap-6 md:grid-cols-2">
+                <RiskPortfolioWidget />
+                <KillSwitchWidget />
+            </div>
         </div>
     );
 }
