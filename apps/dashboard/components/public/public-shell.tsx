@@ -38,7 +38,7 @@ export function PublicShell({ children }: PublicShellProps) {
 
           {/* Logo */}
           <Link href="/public/overview" className="flex items-center gap-3 mr-8 group">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center shadow-lg shadow-cyan-500/20 group-hover:shadow-cyan-500/30 transition-shadow">
+            <div className="w-10 h-10 rounded-xl bg-linear-to-br from-cyan-500 to-blue-600 flex items-center justify-center shadow-lg shadow-cyan-500/20 group-hover:shadow-cyan-500/30 transition-shadow">
               <Bot className="w-6 h-6 text-white" />
             </div>
             <div className="hidden sm:block">
@@ -79,14 +79,14 @@ export function PublicShell({ children }: PublicShellProps) {
             </a>
             <a
               href="/app/overview"
-              className="hidden sm:flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium text-white bg-gradient-to-r from-cyan-500 to-blue-600 hover:shadow-lg hover:shadow-cyan-500/25 transition-all"
+              className="hidden sm:flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium text-white bg-linear-to-r from-cyan-500 to-blue-600 hover:shadow-lg hover:shadow-cyan-500/25 transition-all"
             >
               <span>{t("operatorLogin")}</span>
               <ExternalLink className="h-3.5 w-3.5" />
             </a>
             <a
               href="/app/overview"
-              className="sm:hidden flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-medium text-white bg-gradient-to-r from-cyan-500 to-blue-600 hover:shadow-lg hover:shadow-cyan-500/25 transition-all"
+              className="sm:hidden flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-medium text-white bg-linear-to-r from-cyan-500 to-blue-600 hover:shadow-lg hover:shadow-cyan-500/25 transition-all"
             >
               <span>{t("login")}</span>
               <ExternalLink className="h-3 w-3" />
@@ -106,7 +106,7 @@ export function PublicShell({ children }: PublicShellProps) {
               className={cn(
                 "flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all",
                 pathname === item.href
-                  ? "bg-gradient-to-r from-cyan-500/20 to-blue-500/10 text-cyan-400 border border-cyan-500/20"
+                  ? "bg-linear-to-r from-cyan-500/20 to-blue-500/10 text-cyan-400 border border-cyan-500/20"
                   : "text-zinc-400 hover:bg-white/5 hover:text-white"
               )}
             >
@@ -127,7 +127,7 @@ export function PublicShell({ children }: PublicShellProps) {
             </a>
             <a
               href="/app/overview"
-              className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-white bg-gradient-to-r from-cyan-500 to-blue-600 hover:shadow-lg hover:shadow-cyan-500/25 transition-all"
+              className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-white bg-linear-to-r from-cyan-500 to-blue-600 hover:shadow-lg hover:shadow-cyan-500/25 transition-all"
             >
               <ExternalLink className="h-4 w-4" />
               {t("operatorLogin")}
@@ -154,7 +154,7 @@ export function PublicShell({ children }: PublicShellProps) {
       <footer className="border-t border-white/10 glass">
         <div className="container flex flex-col md:flex-row items-center justify-between gap-4 py-8 px-4 md:px-8">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-cyan-500/50 to-blue-600/50 flex items-center justify-center">
+            <div className="w-8 h-8 rounded-lg bg-linear-to-br from-cyan-500/50 to-blue-600/50 flex items-center justify-center">
               <Bot className="w-4 h-4 text-white" />
             </div>
             <div>
