@@ -23,6 +23,7 @@ import {
 import { RefreshCw, UserPlus, Users } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { DASHBOARD_CONFIG } from "@/lib/config";
+import { MOCK_USERS } from "@/lib/mock-data";
 
 type UserEdits = Record<string, { role: UserRole; disabled: boolean }>;
 
@@ -67,8 +68,9 @@ export default function UsersPage() {
     setLoadError(null);
 
     if (DASHBOARD_CONFIG.USE_MOCK_DATA) {
-      setUsers([]);
-      setUserEdits({});
+      const mockUsers = MOCK_USERS as ManagedUser[];
+      setUsers(mockUsers);
+      seedEdits(mockUsers);
       setLoading(false);
       return;
     }
@@ -182,11 +184,10 @@ export default function UsersPage() {
 
       {statusMessage && (
         <div
-          className={`rounded-md border p-4 ${
-            statusKind === "error"
-              ? "border-red-500/20 bg-red-500/10 text-red-600"
-              : "border-green-500/20 bg-green-500/10 text-green-600"
-          }`}
+          className={`rounded-md border p-4 ${statusKind === "error"
+            ? "border-red-500/20 bg-red-500/10 text-red-600"
+            : "border-green-500/20 bg-green-500/10 text-green-600"
+            }`}
         >
           {statusMessage}
         </div>

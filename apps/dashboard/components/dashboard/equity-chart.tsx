@@ -16,24 +16,30 @@ import { formatCurrency } from "@/lib/utils";
 import { DASHBOARD_CONFIG } from "@/lib/config";
 import { TrendingUp, Activity, Sparkles } from "lucide-react";
 
-// Dummy data generator if no real data
+// Deterministic profitable equity curve for demo mode
 const generateDummyData = () => {
   const data = [];
   let val = 10000;
+  // Seeded daily returns that always net positive — realistic but profitable
+  const dailyReturns = [
+    0.005, 0.012, -0.003, 0.018, 0.008, -0.002, 0.015, 0.006, 0.010, -0.004,
+    0.020, 0.003, 0.014, -0.001, 0.009, 0.011, -0.005, 0.022, 0.007, 0.013,
+    0.004, 0.016, -0.003, 0.019, 0.008, 0.010, 0.005, 0.012, 0.015, 0.009,
+  ];
   for (let i = 0; i < 30; i++) {
-    val = val * (1 + (Math.random() * 0.04 - 0.015));
+    val = val * (1 + dailyReturns[i]);
     data.push({
       date: new Date(Date.now() - (30 - i) * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-      value: val,
+      value: Math.round(val * 100) / 100,
     });
   }
   return data;
 };
 
 // Custom Tooltip Component
-function CustomTooltip({ active, payload, label }: { active?: boolean; payload?: Array<{value: number}>; label?: string }) {
+function CustomTooltip({ active, payload, label }: { active?: boolean; payload?: Array<{ value: number }>; label?: string }) {
   const t = useTranslations("Dashboard");
-  
+
   if (active && payload && payload.length) {
     return (
       <div className="rounded-xl px-4 py-3 border border-cyan-500/30 bg-[#0a0a0f]/95 backdrop-blur-xl shadow-[0_0_30px_-5px_rgba(6,182,212,0.3)]">
@@ -55,12 +61,12 @@ export function EquityChart() {
   const { botState } = useDashboardStore();
   const t = useTranslations("Dashboard");
   const tCommon = useTranslations("Common");
-  
-  let chartData: {date: string; value: number}[] = [];
-  
+
+  let chartData: { date: string; value: number }[] = [];
+
   if (DASHBOARD_CONFIG.USE_MOCK_DATA) {
     const data = generateDummyData();
-    chartData = [...data, { date: "Now", value: botState.equity_usd || 10000 }];
+    chartData = [...data, { date: "Now", value: data[data.length - 1]?.value || 13200 }];
   } else if (botState.equity_usd) {
     chartData = [{ date: "Now", value: botState.equity_usd }];
   }
@@ -73,32 +79,32 @@ export function EquityChart() {
   const isPositive = change >= 0;
 
   if (chartData.length < 2 && !DASHBOARD_CONFIG.USE_MOCK_DATA) {
-     return (
-        <NeoCard variant="default">
-          <div className="p-6">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="p-2 rounded-lg bg-cyan-500/20">
-                <Activity className="w-5 h-5 text-cyan-400" />
-              </div>
-              <div>
-                <h3 className="text-lg font-semibold text-white">{t("equityCurve")}</h3>
-                <p className="text-sm text-zinc-500">{t("waitingForData")}</p>
-              </div>
+    return (
+      <NeoCard variant="default">
+        <div className="p-6">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="p-2 rounded-lg bg-cyan-500/20">
+              <Activity className="w-5 h-5 text-cyan-400" />
             </div>
-            <div className="h-[300px] flex items-center justify-center">
-              <div className="flex flex-col items-center gap-4">
-                <div className="relative">
-                  <div className="w-20 h-20 rounded-full border-2 border-dashed border-cyan-500/30 animate-spin" style={{ animationDuration: '3s' }} />
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <Sparkles className="w-6 h-6 text-cyan-400/50" />
-                  </div>
-                </div>
-                <p className="text-sm text-zinc-500">{t("waitingForData")}</p>
-              </div>
+            <div>
+              <h3 className="text-lg font-semibold text-white">{t("equityCurve")}</h3>
+              <p className="text-sm text-zinc-500">{t("waitingForData")}</p>
             </div>
           </div>
-        </NeoCard>
-     );
+          <div className="h-[300px] flex items-center justify-center">
+            <div className="flex flex-col items-center gap-4">
+              <div className="relative">
+                <div className="w-20 h-20 rounded-full border-2 border-dashed border-cyan-500/30 animate-spin" style={{ animationDuration: '3s' }} />
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <Sparkles className="w-6 h-6 text-cyan-400/50" />
+                </div>
+              </div>
+              <p className="text-sm text-zinc-500">{t("waitingForData")}</p>
+            </div>
+          </div>
+        </div>
+      </NeoCard>
+    );
   }
 
   return (
@@ -115,7 +121,7 @@ export function EquityChart() {
               <p className="text-sm text-zinc-500">{t("equitySubtitle")}</p>
             </div>
           </div>
-          
+
           {/* Stats Grid */}
           <div className="flex items-center gap-4 sm:gap-6">
             <div className="text-right">
@@ -155,7 +161,7 @@ export function EquityChart() {
                   <stop offset="70%" stopColor={isPositive ? "#3b82f6" : "#fb7185"} stopOpacity={0.1} />
                   <stop offset="100%" stopColor={isPositive ? "#3b82f6" : "#fb7185"} stopOpacity={0} />
                 </linearGradient>
-                
+
                 {/* Neon line gradient */}
                 <linearGradient id="lineGradient" x1="0" y1="0" x2="1" y2="0">
                   <stop offset="0%" stopColor={isPositive ? "#22d3ee" : "#fb7185"} />
@@ -168,7 +174,7 @@ export function EquityChart() {
                   <stop offset="0%" stopColor={isPositive ? "#06b6d4" : "#f43f5e"} stopOpacity={0.6} />
                   <stop offset="100%" stopColor={isPositive ? "#06b6d4" : "#f43f5e"} stopOpacity={0} />
                 </linearGradient>
-                
+
                 {/* Enhanced glow filter */}
                 <filter id="lineGlow" x="-100%" y="-100%" width="300%" height="300%">
                   <feGaussianBlur stdDeviation="4" result="coloredBlur" />
@@ -189,38 +195,38 @@ export function EquityChart() {
                   </feMerge>
                 </filter>
               </defs>
-              
-              <CartesianGrid 
-                strokeDasharray="3 3" 
-                stroke="rgba(255,255,255,0.03)" 
-                vertical={false} 
+
+              <CartesianGrid
+                strokeDasharray="3 3"
+                stroke="rgba(255,255,255,0.03)"
+                vertical={false}
               />
-              
-              <XAxis 
-                dataKey="date" 
-                stroke="rgba(255,255,255,0.1)" 
-                fontSize={11} 
-                tickLine={false} 
+
+              <XAxis
+                dataKey="date"
+                stroke="rgba(255,255,255,0.1)"
+                fontSize={11}
+                tickLine={false}
                 axisLine={false}
                 minTickGap={30}
                 tick={{ fill: '#52525b' }}
               />
-              
-              <YAxis 
-                stroke="rgba(255,255,255,0.1)" 
-                fontSize={11} 
-                tickLine={false} 
+
+              <YAxis
+                stroke="rgba(255,255,255,0.1)"
+                fontSize={11}
+                tickLine={false}
                 axisLine={false}
                 tickFormatter={(val) => `$${(val / 1000).toFixed(1)}k`}
                 domain={['auto', 'auto']}
                 tick={{ fill: '#52525b' }}
               />
-              
-              <Tooltip 
-                content={<CustomTooltip />} 
+
+              <Tooltip
+                content={<CustomTooltip />}
                 cursor={{ stroke: 'rgba(6,182,212,0.3)', strokeWidth: 1, strokeDasharray: '4 4' }}
               />
-              
+
               {/* Background glow area */}
               <Area
                 type="monotone"
@@ -246,7 +252,7 @@ export function EquityChart() {
           </ResponsiveContainer>
         </div>
       </div>
-      
+
       {/* Bottom Glow Line */}
       <div className="h-1 bg-gradient-to-r from-transparent via-cyan-500/50 to-transparent" />
     </NeoCard>

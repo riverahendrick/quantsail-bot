@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import { useDashboardStore } from '@/lib/store';
 import { auth } from '@/lib/firebase';
 import { DASHBOARD_CONFIG } from "@/lib/config";
+import { MOCK_BOT_STATE, MOCK_TRADES } from "@/lib/mock-data";
 
 export function useDashboardWs() {
   const { setBotState, addTrade, addEvent, setConnected, updateHeartbeat } = useDashboardStore();
@@ -11,11 +12,13 @@ export function useDashboardWs() {
   useEffect(() => {
     let isMounted = true;
 
-    // Skip WebSocket connection in mock mode
+    // In mock mode, seed the store with demo data instead of connecting to WS
     if (DASHBOARD_CONFIG.USE_MOCK_DATA) {
-      // In mock mode, set disconnected state
       if (isMounted) {
-        setConnected(false);
+        setBotState(MOCK_BOT_STATE);
+        MOCK_TRADES.forEach((trade) => addTrade(trade));
+        setConnected(true);
+        updateHeartbeat();
       }
       return;
     }
@@ -32,8 +35,8 @@ export function useDashboardWs() {
           }
         }
 
-        const wsUrl = `${DASHBOARD_CONFIG.WS_URL}?token=${token}`; 
-        
+        const wsUrl = `${DASHBOARD_CONFIG.WS_URL}?token=${token}`;
+
         const ws = new WebSocket(wsUrl);
         wsRef.current = ws;
 
@@ -50,34 +53,34 @@ export function useDashboardWs() {
         };
 
         ws.onerror = () => {
-           // Standard WS error event doesn't give much info, but we know it closed
-           // Browser console will show the connection refused error, which is unavoidable
-           // when the server is down.
+          // Standard WS error event doesn't give much info, but we know it closed
+          // Browser console will show the connection refused error, which is unavoidable
+          // when the server is down.
         };
 
         ws.onmessage = (event) => {
           try {
             const data = JSON.parse(event.data);
-            
+
             if (data.type === "status") {
               updateHeartbeat();
               if (data.payload?.status) {
-                 setBotState({ status: data.payload.status });
+                setBotState({ status: data.payload.status });
               }
             } else if (data.type === "trade") {
-               addTrade(data.payload);
+              addTrade(data.payload);
             } else if (data.type === "event") {
-               addEvent({
-                 seq: data.cursor,
-                 type: data.event_type,
-                 level: data.level,
-                 payload: data.payload,
-                 timestamp: data.ts
-               });
+              addEvent({
+                seq: data.cursor,
+                type: data.event_type,
+                level: data.level,
+                payload: data.payload,
+                timestamp: data.ts
+              });
             } else if (data.type === "snapshot") {
-               if (data.payload.equity_usd) {
-                 setBotState({ equity_usd: data.payload.equity_usd });
-               }
+              if (data.payload.equity_usd) {
+                setBotState({ equity_usd: data.payload.equity_usd });
+              }
             }
 
           } catch (e) {

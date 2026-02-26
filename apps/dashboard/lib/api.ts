@@ -1,16 +1,66 @@
 import { auth } from "./firebase";
 import { DASHBOARD_CONFIG } from "./config";
+import {
+    MOCK_BOT_CONFIG,
+    MOCK_EXCHANGE_KEYS,
+    MOCK_USERS,
+    MOCK_EVENTS,
+    MOCK_STRATEGY_PERFORMANCE,
+    MOCK_PORTFOLIO_RISK,
+    MOCK_KILL_SWITCH,
+    MOCK_GRID_PORTFOLIO,
+} from "./mock-data";
 
 // Mock data responses for development (only used when explicitly enabled)
 function getMockResponse<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
-    // Return empty responses - no mock data
+    const method = (options.method || "GET").toUpperCase();
+
+    // For write operations, return a mock success response
+    if (method !== "GET") {
+        const writeResponse: Record<string, unknown> = {
+            success: true,
+            message: `Mock ${method} to ${endpoint} accepted`,
+            // Return a plausible object for POST/PATCH that pages might use
+            version: 1,
+            config_hash: "mock_hash_abc123",
+            is_active: true,
+            created_at: new Date().toISOString(),
+        };
+        return Promise.resolve(writeResponse as T);
+    }
+
+    // Endpoint-to-mock-data map for GET requests
     const mocks: Record<string, unknown> = {
-        "/v1/users": [],
-        "/v1/events": [],
-        "/v1/exchanges/binance/keys/status": { keys: [] }
+        "/v1/config": {
+            version: 3,
+            config_hash: "a1b2c3d4e5f6",
+            is_active: true,
+            created_at: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
+            config_json: MOCK_BOT_CONFIG,
+        },
+        "/v1/exchanges/binance/keys/status": MOCK_EXCHANGE_KEYS,
+        "/v1/users": MOCK_USERS,
+        "/v1/events": MOCK_EVENTS,
+        "/v1/strategies/performance": MOCK_STRATEGY_PERFORMANCE,
+        "/v1/risk/portfolio": MOCK_PORTFOLIO_RISK,
+        "/v1/risk/kill-switch/status": MOCK_KILL_SWITCH,
+        "/v1/grid/portfolio": MOCK_GRID_PORTFOLIO,
     };
 
-    return Promise.resolve((mocks[endpoint] || {}) as T);
+    // Try exact match first, then prefix match for parameterized routes
+    let data = mocks[endpoint];
+    if (!data) {
+        // Handle parameterized routes like /v1/grid/BTCUSDT
+        if (endpoint.startsWith("/v1/grid/")) {
+            const symbol = endpoint.split("/v1/grid/")[1];
+            const coin = MOCK_GRID_PORTFOLIO.coins.find(
+                (c: { symbol: string }) => c.symbol.toUpperCase() === symbol?.toUpperCase()
+            );
+            data = coin ? { ...coin, levels: [] } : {};
+        }
+    }
+
+    return Promise.resolve((data || {}) as T);
 }
 
 async function getHeaders() {
@@ -345,6 +395,17 @@ export interface PublicGridPerformance {
 }
 
 export async function getPublicGridPerformance(): Promise<PublicGridPerformance> {
+    if (DASHBOARD_CONFIG.USE_MOCK_DATA) {
+        return {
+            active: true,
+            coins_traded: 5,
+            total_fills: 312,
+            daily_return_pct: 1.24,
+            total_pnl_usd: 845.20,
+            strategy: "Grid v2 (Adaptive Spread)",
+            last_updated: new Date().toISOString(),
+        };
+    }
     const url = `${DASHBOARD_CONFIG.API_URL}/public/v1/grid/performance`;
     const res = await fetch(url);
     if (!res.ok) throw new Error("Failed to fetch grid performance");
