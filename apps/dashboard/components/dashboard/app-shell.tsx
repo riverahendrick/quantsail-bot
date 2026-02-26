@@ -16,6 +16,7 @@ import {
   Bot,
   ChevronRight,
   Grid3x3,
+  Globe,
 } from "lucide-react";
 import { useState } from "react";
 import { useTranslations } from "next-intl";
@@ -106,6 +107,19 @@ export function AppShell({ children }: AppShellProps) {
               </Link>
             );
           })}
+          {/* Public Dashboard Link */}
+          <div className="mt-4 pt-4 border-t border-white/10">
+            <p className="px-3 py-2 text-xs font-medium text-zinc-500 uppercase tracking-wider">
+              {t("external")}
+            </p>
+            <Link
+              href="/public/overview"
+              className="group flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium text-zinc-400 hover:bg-white/5 hover:text-white transition-all duration-200"
+            >
+              <Globe className="h-5 w-5 text-zinc-500 group-hover:text-zinc-300 transition-colors" />
+              <span className="flex-1">{t("viewPublicDashboard")}</span>
+            </Link>
+          </div>
         </nav>
 
         {/* Bottom Section */}

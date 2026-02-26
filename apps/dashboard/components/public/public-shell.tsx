@@ -29,13 +29,13 @@ export function PublicShell({ children }: PublicShellProps) {
       <header className="sticky top-0 z-50 w-full glass-strong border-b border-white/10">
         <div className="container flex h-20 items-center px-4 md:px-8">
           {/* Mobile Menu Button */}
-          <button 
+          <button
             className="mr-4 md:hidden p-2 rounded-lg hover:bg-white/10 transition-colors"
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
           >
             {isMobileMenuOpen ? <X className="h-6 w-6 text-zinc-400" /> : <Menu className="h-6 w-6 text-zinc-400" />}
           </button>
-          
+
           {/* Logo */}
           <Link href="/public/overview" className="flex items-center gap-3 mr-8 group">
             <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center shadow-lg shadow-cyan-500/20 group-hover:shadow-cyan-500/30 transition-shadow">
@@ -55,8 +55,8 @@ export function PublicShell({ children }: PublicShellProps) {
                 href={item.href}
                 className={cn(
                   "flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200",
-                  pathname === item.href 
-                    ? "bg-white/10 text-white" 
+                  pathname === item.href
+                    ? "bg-white/10 text-white"
                     : "text-zinc-400 hover:text-white hover:bg-white/5"
                 )}
               >
@@ -68,25 +68,25 @@ export function PublicShell({ children }: PublicShellProps) {
 
           {/* Right Side Actions */}
           <div className="flex items-center gap-3 ml-auto">
-            <a 
-              href="https://github.com" 
-              target="_blank" 
+            <a
+              href="https://github.com"
+              target="_blank"
               rel="noopener noreferrer"
               className="hidden sm:flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium text-zinc-400 hover:text-white hover:bg-white/5 transition-all"
             >
               <Github className="h-4 w-4" />
               <span>{t("github")}</span>
             </a>
-            <a 
+            <a
               href="/app/overview"
-              className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium text-zinc-600 hover:text-white hover:bg-white/5 transition-all"
+              className="hidden sm:flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium text-white bg-gradient-to-r from-cyan-500 to-blue-600 hover:shadow-lg hover:shadow-cyan-500/25 transition-all"
             >
               <span>{t("operatorLogin")}</span>
-              <ExternalLink className="h-3 w-3" />
+              <ExternalLink className="h-3.5 w-3.5" />
             </a>
-            <a 
+            <a
               href="/app/overview"
-              className="sm:hidden flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium text-zinc-600 hover:text-white hover:bg-white/5 transition-all"
+              className="sm:hidden flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-medium text-white bg-gradient-to-r from-cyan-500 to-blue-600 hover:shadow-lg hover:shadow-cyan-500/25 transition-all"
             >
               <span>{t("login")}</span>
               <ExternalLink className="h-3 w-3" />
@@ -105,8 +105,8 @@ export function PublicShell({ children }: PublicShellProps) {
               onClick={() => setIsMobileMenuOpen(false)}
               className={cn(
                 "flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all",
-                pathname === item.href 
-                  ? "bg-gradient-to-r from-cyan-500/20 to-blue-500/10 text-cyan-400 border border-cyan-500/20" 
+                pathname === item.href
+                  ? "bg-gradient-to-r from-cyan-500/20 to-blue-500/10 text-cyan-400 border border-cyan-500/20"
                   : "text-zinc-400 hover:bg-white/5 hover:text-white"
               )}
             >
@@ -114,27 +114,27 @@ export function PublicShell({ children }: PublicShellProps) {
               {item.label}
             </Link>
           ))}
-          
+
           <div className="pt-4 mt-4 border-t border-white/10 space-y-2">
-            <a 
-              href="https://github.com" 
-              target="_blank" 
+            <a
+              href="https://github.com"
+              target="_blank"
               rel="noopener noreferrer"
               className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-zinc-400 hover:bg-white/5 hover:text-white transition-all"
             >
               <Github className="h-5 w-5" />
               {t("github")}
             </a>
-            <a 
+            <a
               href="/app/overview"
-              className="flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-medium text-zinc-600 hover:bg-white/5 hover:text-white transition-all"
+              className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-white bg-gradient-to-r from-cyan-500 to-blue-600 hover:shadow-lg hover:shadow-cyan-500/25 transition-all"
             >
               <ExternalLink className="h-4 w-4" />
               {t("operatorLogin")}
             </a>
-            <a 
-              href="https://twitter.com" 
-              target="_blank" 
+            <a
+              href="https://twitter.com"
+              target="_blank"
               rel="noopener noreferrer"
               className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-zinc-400 hover:bg-white/5 hover:text-white transition-all"
             >
@@ -149,7 +149,7 @@ export function PublicShell({ children }: PublicShellProps) {
       <main className="flex-1 container px-4 md:px-8 py-8 max-w-7xl mx-auto">
         {children}
       </main>
-      
+
       {/* Footer */}
       <footer className="border-t border-white/10 glass">
         <div className="container flex flex-col md:flex-row items-center justify-between gap-4 py-8 px-4 md:px-8">
@@ -162,13 +162,13 @@ export function PublicShell({ children }: PublicShellProps) {
               <p className="text-xs text-zinc-500">{t("tagline")}</p>
             </div>
           </div>
-          
+
           <div className="flex items-center gap-6">
             <a href="#" className="text-sm text-zinc-500 hover:text-white transition-colors">{t("docs")}</a>
             <a href="#" className="text-sm text-zinc-500 hover:text-white transition-colors">{t("api")}</a>
             <a href="#" className="text-sm text-zinc-500 hover:text-white transition-colors">{t("status")}</a>
           </div>
-          
+
           <p className="text-sm text-zinc-600 text-center md:text-right">
             {t("note")} {tCommon("separator")} <a href="/app/overview" className="text-zinc-700 hover:text-zinc-500 transition-colors">{t("login")}</a>
           </p>

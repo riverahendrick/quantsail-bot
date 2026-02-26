@@ -169,7 +169,9 @@
     "noTrades": "No trades found.",
     "ok": "OK",
     "locked": "LOCKED",
-    "active": "ACTIVE"
+    "active": "ACTIVE",
+    "external": "External",
+    "viewPublicDashboard": "View Public Dashboard"
   },
   "Auth": {
     "loading": "Loading...",

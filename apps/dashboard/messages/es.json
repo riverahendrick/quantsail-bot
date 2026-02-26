@@ -169,7 +169,9 @@
     "noTrades": "No se encontraron operaciones.",
     "ok": "OK",
     "locked": "BLOQUEADO",
-    "active": "ACTIVO"
+    "active": "ACTIVO",
+    "external": "Externo",
+    "viewPublicDashboard": "Ver Panel Público"
   },
   "Auth": {
     "loading": "Cargando...",

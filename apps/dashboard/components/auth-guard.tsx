@@ -7,6 +7,12 @@ import { DASHBOARD_CONFIG } from "@/lib/config";
 import { listUsers } from "@/lib/api";
 
 export function AuthGuard({ children }: { children: React.ReactNode }) {
+  // Demo mode: skip auth entirely so the dashboard is browsable without Firebase
+  if (DASHBOARD_CONFIG.DEMO_MODE) {
+    return <>{children}</>;
+  }
+
+
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [email, setEmail] = useState("");
@@ -15,7 +21,7 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
   const [requiresPasswordChange, setRequiresPasswordChange] = useState(false);
   const [isOwnerSetup, setIsOwnerSetup] = useState(false);
   const [systemChecked, setSystemChecked] = useState(false);
-  
+
   const tAuth = useTranslations("Auth");
 
   useEffect(() => {
@@ -62,19 +68,19 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
     try {
       // Real Firebase authentication only
       const result = await signInWithEmailAndPassword(auth, email, password);
-      
+
       // Check if this is first-time login (requires password change)
       // This would be determined by a custom claim or user metadata from your backend
       const userMetadata = result.user.metadata;
       const isFirstLogin = !userMetadata.lastSignInTime || userMetadata.creationTime === userMetadata.lastSignInTime;
-      
+
       if (isFirstLogin) {
         setRequiresPasswordChange(true);
       }
     } catch (err: unknown) {
       // Cast to any to check for firebase specific properties safely
       const fbError = err as { code?: string; message?: string };
-      
+
       if (fbError.code === 'auth/api-key-not-authorized' || fbError.code === 'auth/operation-not-allowed') {
         // Firebase not properly configured - show clear error message
         setError("Firebase not properly configured. Please check your Firebase project settings and enable Email/Password authentication.");
@@ -91,7 +97,7 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
     try {
       // Create owner account in Firebase only
       const result = await createUserWithEmailAndPassword(auth, email, password);
-      
+
       // For now, we'll consider the owner registered
       // In production, you'd also call your API to create the user with OWNER role
       setIsOwnerSetup(false);
@@ -99,7 +105,7 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
     } catch (err: unknown) {
       // Cast to any to check for firebase specific properties safely
       const fbError = err as { code?: string; message?: string };
-      
+
       if (fbError.code === 'auth/api-key-not-authorized' || fbError.code === 'auth/operation-not-allowed') {
         // Firebase not properly configured - show clear error message
         setError("Firebase not properly configured. Please check your Firebase project settings and enable Email/Password authentication.");
@@ -117,22 +123,22 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
       const form = e.target as HTMLFormElement;
       const newPassword = (form.elements.namedItem('new-password') as HTMLInputElement).value;
       const confirmPassword = (form.elements.namedItem('confirm-password') as HTMLInputElement).value;
-      
+
       if (newPassword !== confirmPassword) {
         setError("Passwords do not match");
         return;
       }
-      
+
       if (newPassword.length < 8) {
         setError("Password must be at least 8 characters");
         return;
       }
-      
+
       // Update password in Firebase
       if (auth.currentUser) {
         await updatePassword(auth.currentUser, newPassword);
       }
-      
+
       // Clear password change requirement
       setRequiresPasswordChange(false);
       setPassword("");
