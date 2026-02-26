@@ -32,8 +32,27 @@ node_modules/
 # Data directories (backtest results, grid state)
 services/data/
 data/
+backtest_results/
 
 # Build / cache
 .mypy_cache/
 .pytest_cache/
 .ruff_cache/
+.next/
+
+# Internal development files (not for external viewers)
+AGENTS.md
+CLAUDE.md
+GEMINI.md
+GLOBAL_RULES.md
+MASTER_GLOBAL_RULES.md
+PROMPT.md
+SCRATCHPAD.md
+todo.md
+FEATURES.md
+docs/08_PROMPTS/
+docs/QUANTSAIL_COMPLETE_IMPLEMENTATION_GUIDE.md
+docs/TECHNICAL_IMPLEMENTATION_CODE.md
+docs/18_REMEDIATION_PLAN.md
+docs/20_PHASE1_PROGRESS.md
+pyrightconfig.json

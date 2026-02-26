@@ -1,52 +1,38 @@
-# Quantsail — Crypto Spot Auto‑Trading + Live Transparency Dashboard
+# Quantsail — Crypto Spot Auto-Trading Bot
 
-This repository is designed to be built by AI coding agents **without guesswork**.
-The docs define exact behavior, interfaces, and acceptance criteria.
+**Quantsail** is an automated cryptocurrency spot trading system designed for safety, profitability, and transparency. It features a **Private Operator Dashboard** for full control and monitoring, and a **Public Transparency Dashboard** for sharing live performance with investors.
 
-## Non‑negotiables
-- Read `GLOBAL_RULES.md` first and comply.
-- Do **not** create a nested root folder.
-- TDD everywhere; **100% coverage for touched files**; E2E for critical flows.
-- i18n (EN/ES) from day one (no hardcoded UI strings).
-- Vercel hosts UI only (no secrets). VPS hosts engine+API+DB.
+## Key Features
 
-## Reading order
-1. `docs/00_SYSTEM_OVERVIEW.md`
-2. `docs/01_PRD.md`
-3. `docs/02_ARCHITECTURE.md`
-4. `docs/09_CONFIG_SPEC.md`
-5. `docs/13_ENGINE_SPEC.md`
-6. `docs/03_API_SPEC.md`
-7. `docs/04_DB_SCHEMA.md`
-8. `docs/05_UI_SPEC.md`
-9. `docs/08_PROMPTS/` (execute in order)
+- **Automated Spot Trading** — executes trades on Binance Spot based on configurable strategies
+- **Multi-Strategy Engine** — supports EMA crossover, grid trading, and ensemble agreement
+- **Circuit Breakers & Risk Controls** — automatic stop-loss triggers, daily P&L limits, and drawdown protection
+- **Real-Time Dashboards** — monitor everything live from your browser
+- **Public Transparency** — share sanitized, real-time performance data without exposing sensitive details
+- **Multi-Language Support** — English and Spanish (EN/ES)
 
-9) docs/06_SECURITY_OPS.md
-10) docs/07_VALIDATION_AND_GO_LIVE.md
-11) docs/12_GLOSSARY.md
+## Architecture
 
-## Developer Commands
-### Infrastructure
-- `cd infra/docker && docker compose up -d`
-- `cd infra/docker && docker compose down`
-- Postgres: localhost:5433 (container 5432), Redis: localhost:6380 (container 6379)
+| Component | Technology | Purpose |
+|-----------|-----------|---------|
+| Dashboard | Next.js (React) | Operator and public web interface |
+| API | FastAPI (Python) | REST API, authentication, data streaming |
+| Engine | Python | Trading strategies, risk management, order execution |
+| Database | PostgreSQL | System of record for trades, events, and configuration |
+| Cache | Redis | Rate limiting and real-time data caching |
 
-### Dashboard (Next.js)
-- `cd apps/dashboard && pnpm install`
-- `cd apps/dashboard && pnpm dev` (http://localhost:3000)
-- `cd apps/dashboard && pnpm lint`
-- `cd apps/dashboard && pnpm typecheck`
+## Getting Started
 
-### API (FastAPI)
-- Set `DATABASE_URL=postgresql+psycopg://quantsail:postgres@localhost:5433/quantsail`
-- Set `GOOGLE_APPLICATION_CREDENTIALS=/path/to/firebase-service-account.json`
-- Optional: `REDIS_URL=redis://localhost:6380/0` (public rate limiting)
-- `cd services/api && uv run uvicorn app.main:app --reload --host 127.0.0.1 --port 8000`
-- Health check: http://127.0.0.1:8000/v1/health
-- DB health check: http://127.0.0.1:8000/v1/health/db
-- `cd services/api && uv run alembic upgrade head`
-- `cd services/api && uv run pytest -q --cov`
+👉 **See [SETUP_GUIDE.md](SETUP_GUIDE.md)** for complete step-by-step installation and setup instructions.
 
-### Engine
-- `cd services/engine && uv run python -m quantsail_engine.main`
-- `cd services/engine && uv run pytest -q --cov`
+## Dashboard URLs (After Setup)
+
+| Dashboard | URL | Description |
+|-----------|-----|-------------|
+| **Admin Panel** | http://localhost:3000/app/overview | Full operator control panel |
+| **Public Dashboard** | http://localhost:3000/public/overview | Investor-facing transparency view |
+| **API Documentation** | http://localhost:8000/docs | Interactive API reference |
+
+## License
+
+Proprietary. All rights reserved.

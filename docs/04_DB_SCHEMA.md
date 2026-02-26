@@ -1,6 +1,6 @@
 # Quantsail — Database Schema v7 (Postgres, Explicit)
 
-Rule: no guessing. If code diverges, update this doc first.
+Rule: if code diverges from this spec, update this doc first.
 
 ## Conventions
 - All timestamps are `timestamptz` in UTC.

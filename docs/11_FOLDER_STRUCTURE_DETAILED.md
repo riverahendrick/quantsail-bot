@@ -4,7 +4,6 @@ This guide is written for someone who does not know software engineering. It exp
 
 ## Golden rule: the repo root is THIS folder
 Never create a new project folder inside the repo root. The root is where you see:
-- `GLOBAL_RULES.md`
 - `README.md`
 - `docs/`
 
@@ -20,7 +19,7 @@ Human-readable documents and plans.
 - PRD: what the product must do
 - Architecture: how we organize code and services
 - Specs: API, DB, UI, security
-- Prompts: step-by-step build tasks for AI agents
+- Build plans: step-by-step implementation tasks
 - Changelog: a log of what changed
 
 You should update docs whenever behavior changes, because docs are the contract.
@@ -94,9 +93,8 @@ Whenever you change code, you also update:
 # Quantsail — Folder Structure (Exact)
 
 Repo root (this folder):
-- GLOBAL_RULES.md
 - README.md
-- todo.md
+- SETUP_GUIDE.md
 - docs/
 - apps/
 - services/

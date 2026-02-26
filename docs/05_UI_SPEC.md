@@ -1,4 +1,4 @@
-# Quantsail — UI Specification v6 (No Guessing)
+# Quantsail — UI Specification v6
 
 ## 1) UX principles
 - Modern “trading terminal” clarity without clutter

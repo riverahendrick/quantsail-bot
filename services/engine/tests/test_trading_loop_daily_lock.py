@@ -5,7 +5,13 @@ from datetime import datetime, timezone
 from unittest.mock import MagicMock
 
 
-from quantsail_engine.config.models import BotConfig, DailyConfig, ExecutionConfig
+from quantsail_engine.config.models import (
+    BotConfig,
+    DailyConfig,
+    ExecutionConfig,
+    RegimeConfig,
+    StrategiesConfig,
+)
 from quantsail_engine.core.trading_loop import TradingLoop
 from quantsail_engine.execution.dry_run_executor import DryRunExecutor
 from quantsail_engine.market_data.stub_provider import StubMarketDataProvider
@@ -19,6 +25,7 @@ def test_daily_lock_blocks_entry(in_memory_db) -> None:
     # Setup: Daily Lock STOP mode, Target $50
     config = BotConfig(
         execution=ExecutionConfig(min_profit_usd=0.01),
+        strategies=StrategiesConfig(regime=RegimeConfig(enabled=False)),
         daily=DailyConfig(
             enabled=True,
             mode="STOP",
@@ -37,7 +44,8 @@ def test_daily_lock_blocks_entry(in_memory_db) -> None:
     t_id = uuid.uuid4()
     trade = Trade(
         id=t_id, symbol="BTC/USDT", mode="dry-run", status="CLOSED",
-        side="BUY", entry_price=100, entry_qty=1, opened_at=now, closed_at=now,
+        side="BUY", entry_price=100, entry_qty=1, entry_notional_usd=100.0,
+        opened_at=now, closed_at=now,
         realized_pnl_usd=50.0 # Hits target exactly
     )
     in_memory_db.add(trade)
@@ -64,6 +72,7 @@ def test_daily_lock_overdrive_floor_breach(in_memory_db) -> None:
     # Setup: Overdrive, Target 50, Buffer 10
     config = BotConfig(
         execution=ExecutionConfig(min_profit_usd=0.01),
+        strategies=StrategiesConfig(regime=RegimeConfig(enabled=False)),
         daily=DailyConfig(
             enabled=True,
             mode="OVERDRIVE",
@@ -84,12 +93,12 @@ def test_daily_lock_overdrive_floor_breach(in_memory_db) -> None:
     now = datetime.now(timezone.utc)
     t1 = Trade(
         id=uuid.uuid4(), symbol="BTC/USDT", mode="dry-run", status="CLOSED", side="BUY",
-        entry_price=100, entry_qty=1, opened_at=now, closed_at=now,
+        entry_price=100, entry_qty=1, entry_notional_usd=100.0, opened_at=now, closed_at=now,
         realized_pnl_usd=60.0
     )
     t2 = Trade(
         id=uuid.uuid4(), symbol="BTC/USDT", mode="dry-run", status="CLOSED", side="BUY",
-        entry_price=100, entry_qty=1, opened_at=now, closed_at=now,
+        entry_price=100, entry_qty=1, entry_notional_usd=100.0, opened_at=now, closed_at=now,
         realized_pnl_usd=-15.0
     )
     # Net: +45. Peak: 60. Floor: 50. Current < Floor -> Locked.

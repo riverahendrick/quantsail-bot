@@ -5,7 +5,7 @@ from typing import Any
 from sqlalchemy.orm import Session
 from unittest.mock import MagicMock
 
-from quantsail_engine.config.models import BotConfig, ExecutionConfig
+from quantsail_engine.config.models import BotConfig, ExecutionConfig, RegimeConfig, StrategiesConfig
 from quantsail_engine.core.trading_loop import TradingLoop
 from quantsail_engine.execution.executor import ExecutionEngine
 from quantsail_engine.market_data.stub_provider import StubMarketDataProvider
@@ -23,7 +23,11 @@ class FailingExecutor(ExecutionEngine):
 
 
 def test_trading_loop_emits_execution_failed(in_memory_db: Session) -> None:
-    config = BotConfig(execution=ExecutionConfig(min_profit_usd=0.0))
+    """Test that execution.failed event is emitted when executor returns None."""
+    config = BotConfig(
+        execution=ExecutionConfig(min_profit_usd=0.0),
+        strategies=StrategiesConfig(regime=RegimeConfig(enabled=False)),
+    )
     market_data = StubMarketDataProvider(base_price=50000.0)
     signals = MagicMock()
     signals.generate_signal.return_value = Signal(

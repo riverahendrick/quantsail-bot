@@ -105,6 +105,27 @@ def main() -> int:
             return 1
 
         adapter = BinanceSpotAdapter(api_key, secret, testnet=testnet)
+
+        # Pre-flight connectivity check — fail fast if exchange is unreachable
+        try:
+            ticker = adapter.fetch_ticker("BTC/USDT")
+            logger.info(
+                f"✅ Pre-flight check passed: BTC/USDT @ ${ticker.get('last', 'N/A')}"
+            )
+        except Exception as e:
+            logger.error(f"❌ Pre-flight check failed: {e}")
+            logger.error(
+                "Cannot reach the exchange. Verify API keys, network, "
+                "and exchange status before starting in live mode."
+            )
+            sentry = get_sentry()
+            if sentry:
+                sentry.capture_error(
+                    e, context={"phase": "preflight", "mode": "live"}
+                )
+                sentry.flush()
+            return 1
+
         execution_engine = LiveExecutor(repo, adapter)
         logger.info(f"✅ Live execution enabled (Testnet: {testnet})")
 

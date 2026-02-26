@@ -250,7 +250,7 @@ def test_gate_volatility_breaker_triggers(in_memory_db: Session) -> None:
     loop = TradingLoop(config, in_memory_db, market_data, signals, executor)
 
     # Mock ATR to make volatility spike trigger
-    with patch("quantsail_engine.core.trading_loop.calculate_atr") as mock_atr:
+    with patch("quantsail_engine.core.entry_pipeline.calculate_atr") as mock_atr:
         mock_atr.return_value = [10.0]  # ATR = 10, threshold = 30, range = 150 > 30
 
         loop.tick()
@@ -291,7 +291,7 @@ def test_gate_spread_breaker_triggers(in_memory_db: Session) -> None:
     executor = DryRunExecutor()
     loop = TradingLoop(config, in_memory_db, market_data, signals, executor)
 
-    with patch("quantsail_engine.core.trading_loop.calculate_atr") as mock_atr:
+    with patch("quantsail_engine.core.entry_pipeline.calculate_atr") as mock_atr:
         mock_atr.return_value = [2.0]  # Normal ATR
 
         loop.tick()
@@ -353,7 +353,7 @@ def test_gate_consecutive_losses_breaker_triggers(in_memory_db: Session) -> None
         in_memory_db.add(trade)
     in_memory_db.commit()
 
-    with patch("quantsail_engine.core.trading_loop.calculate_atr") as mock_atr:
+    with patch("quantsail_engine.core.entry_pipeline.calculate_atr") as mock_atr:
         mock_atr.return_value = [2.0]  # Normal ATR
 
         loop.tick()
@@ -389,7 +389,7 @@ def test_entry_pending_slippage_error_resets(in_memory_db: Session) -> None:
     loop.state_machines["BTC/USDT"].transition_to(TradingState.ENTRY_PENDING)
 
     # Mock calculate_slippage to raise ValueError during ENTRY_PENDING
-    with patch("quantsail_engine.core.trading_loop.calculate_slippage") as mock_slip:
+    with patch("quantsail_engine.core.entry_pipeline.calculate_slippage") as mock_slip:
         mock_slip.side_effect = ValueError("Insufficient liquidity")
 
         loop._tick_symbol("BTC/USDT")

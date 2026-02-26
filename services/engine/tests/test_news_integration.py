@@ -4,7 +4,7 @@ from unittest.mock import MagicMock, patch
 
 from sqlalchemy.orm import Session
 
-from quantsail_engine.config.models import BotConfig
+from quantsail_engine.config.models import BotConfig, StrategiesConfig, RegimeConfig
 from quantsail_engine.core.state_machine import TradingState
 from quantsail_engine.core.trading_loop import TradingLoop
 from quantsail_engine.execution.dry_run_executor import DryRunExecutor
@@ -16,7 +16,10 @@ from quantsail_engine.signals.ensemble_provider import EnsembleSignalProvider
 
 def test_trading_loop_emits_gate_news_rejected_event(in_memory_db: Session) -> None:
     """Test trading loop emits gate.news.rejected when news pause blocks entry."""
-    config = BotConfig(breakers=BotConfig.model_fields["breakers"].default_factory())
+    config = BotConfig(
+        breakers=BotConfig.model_fields["breakers"].default_factory(),
+        strategies=StrategiesConfig(regime=RegimeConfig(enabled=False)),
+    )
     config.breakers.news.enabled = True
 
     market_data = StubMarketDataProvider(base_price=50000.0)

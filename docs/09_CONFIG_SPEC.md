@@ -1,4 +1,4 @@
-# Quantsail — Configuration Specification v1 (No Guessing)
+# Quantsail — Configuration Specification v1
 
 All configuration must be:
 - validated (schema + constraints),

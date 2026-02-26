@@ -6,7 +6,6 @@
 ---
 
 ## 0) Read First (Non‑Negotiable)
-- Every contributor must read `GLOBAL_RULES.md` and follow it.
 - The system must be **safe-by-default**: dry‑run mode is default; live trading requires explicit arming.
 
 ---
@@ -84,7 +83,7 @@
 ---
 
 ## 4) Functional Requirements (Detailed) — With Acceptance Criteria
-> Each item below is written so a developer/AI agent does not have to guess.
+> Each item below is written with clear acceptance criteria so there is no ambiguity.
 
 ### 4.1 Exchange Keys (Binance) — Encrypted and RBAC protected
 **User story:** As Owner/CTO, I can add Binance keys safely so the bot can trade.
@@ -257,8 +256,8 @@ Breakers and default behavior:
 - Event journal append-only
 
 ### 5.3 Testing policy (mandatory)
-- TDD
-- 100% coverage for touched files
+- Test-driven development
+- High coverage for all modules
 - Integration tests for DB migrations and engine↔API↔DB
 - E2E tests for dashboards
 
@@ -302,4 +301,4 @@ Breakers and default behavior:
 - [ ] Deployed on VPS + Vercel
 
 ## 10) Build-plan mapping
-Implementation is executed via `docs/08_PROMPTS/` in order. See `docs/08_PROMPTS/INDEX.md`.
+Implementation follows the roadmap defined in Section 7 above.

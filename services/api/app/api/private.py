@@ -30,8 +30,12 @@ from app.db.models import BotConfigVersion, ExchangeKey, User
 from app.db.queries import list_equity_snapshots, list_events, list_trades
 from app.schemas.config import BotConfig
 from app.security.encryption import get_encryption_service
+from app.public.rate_limit import enforce_rate_limit
 
-router = APIRouter(prefix="/v1")
+router = APIRouter(
+    prefix="/v1",
+    dependencies=[Depends(enforce_rate_limit)],
+)
 ALLOWED_ROLES = (Role.OWNER, Role.CEO, Role.DEVELOPER)
 
 

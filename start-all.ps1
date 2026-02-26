@@ -33,8 +33,7 @@
 [CmdletBinding()]
 param(
     [switch]$WithInfra,
-    [switch]$SkipInfraCheck,
-    [switch]$Verbose
+    [switch]$SkipInfraCheck
 )
 
 # Configuration

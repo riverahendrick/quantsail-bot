@@ -1,7 +1,7 @@
 import signal
 import uuid
 from datetime import datetime, timezone
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, PropertyMock, patch
 
 import pytest
 from sqlalchemy.orm import Session
@@ -22,8 +22,13 @@ from quantsail_engine.signals.provider import SignalProvider
 
 @pytest.fixture
 def mock_deps() -> dict[str, MagicMock]:
+    session = MagicMock(spec=Session)
+    # Provide bind.dialect.name so EngineRepository.append_event works
+    mock_bind = MagicMock()
+    mock_bind.dialect.name = "sqlite"
+    type(session).bind = PropertyMock(return_value=mock_bind)
     return {
-        "session": MagicMock(spec=Session),
+        "session": session,
         "market_data": MagicMock(spec=MarketDataProvider),
         "signal_provider": MagicMock(spec=SignalProvider),
         "execution": MagicMock(spec=ExecutionEngine),
@@ -52,13 +57,11 @@ def test_trading_loop_exit_logic(config: BotConfig, mock_deps: dict[str, MagicMo
     sm = loop.state_machines[symbol]
 
     # 1. Setup IN_POSITION state
-    # sm.transition_to(TradingState.IN_POSITION)  # Invalid from IDLE
-    sm._current_state = TradingState.IN_POSITION  # Force state for testing logic
+    sm._current_state = TradingState.IN_POSITION
     t_id = str(uuid.uuid4())
     loop.open_trades[symbol] = t_id
 
     # Mock market data
-    # Mid = 52000, Spread = 10 -> Bid 51995, Ask 52005
     mock_deps["market_data"].get_orderbook.return_value = Orderbook(
         bids=[(51995.0, 1.0)], asks=[(52005.0, 1.0)]
     )
@@ -69,7 +72,6 @@ def test_trading_loop_exit_logic(config: BotConfig, mock_deps: dict[str, MagicMo
             "id": t_id,
             "exit_price": 52000.0,
             "realized_pnl_usd": 200.0,
-            # "pnl_pct": 0.04,
             "status": "CLOSED"
         },
         "exit_order": {
@@ -95,7 +97,7 @@ def test_trading_loop_exit_logic(config: BotConfig, mock_deps: dict[str, MagicMo
     assert symbol not in loop.open_trades
     
     # Verify persistence calls
-    mock_deps["execution"].check_exits.assert_called()  # Called during transitions
+    mock_deps["execution"].check_exits.assert_called()
 
 
 def test_trading_loop_missing_trade_id_recovery(
@@ -112,14 +114,12 @@ def test_trading_loop_missing_trade_id_recovery(
     sm = loop.state_machines[symbol]
     
     # Case 1: IN_POSITION but no trade ID
-    # sm.transition_to(TradingState.IN_POSITION)
     sm._current_state = TradingState.IN_POSITION
     loop.open_trades.clear()
     loop._tick_symbol(symbol)
     assert sm.current_state == TradingState.IDLE
     
     # Case 2: EXIT_PENDING but no trade ID
-    # sm.transition_to(TradingState.EXIT_PENDING)
     sm._current_state = TradingState.EXIT_PENDING
     loop.open_trades.clear()
     loop._tick_symbol(symbol)
