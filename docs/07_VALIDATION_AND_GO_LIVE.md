@@ -1,7 +1,7 @@
 # Quantsail — Validation & Go-Live Gates v7
 
 ## 0) Rules
-Open and read `GLOBAL_RULES.md`. Follow it fully.
+Follow all validation and go-live requirements documented in this file.
 
 ## 1) Backtesting
 - multi-regime testing

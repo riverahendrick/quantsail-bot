@@ -1,7 +1,7 @@
 # Quantsail — Security & Operations v7
 
 ## 0) Rules
-Open and read `GLOBAL_RULES.md`. Follow it fully.
+Follow all security requirements documented in this file.
 
 ## 1) Security
 - AES-GCM encrypt exchange keys at rest

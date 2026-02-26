@@ -41,8 +41,8 @@
 - 2026-01-27: Suppressed root layout hydration mismatches caused by external attributes in the dashboard.
 - 2026-01-27: Added dashboard i18n (EN/ES), public overview page, Playwright baseline E2E, and a hardcoded-string guard; configured ruff/mypy/pytest coverage in API and Engine.
 - 2026-01-27: Scaffolded dashboard (Next.js), API (FastAPI + uv), and engine (uv package), added local Docker Compose for Postgres/Redis, and introduced basic infra scripts and tests.
-- 2026-01-26: Created documentation pack v7. Major expansion of PRD (detailed epics, acceptance criteria, checklists) and prompt pack (small scope prompts with high detail).
+- 2026-01-26: Created documentation pack v7. Major expansion of PRD (detailed epics, acceptance criteria, checklists) and implementation guides.
 
-- 2026-01-26: Merged v4 missing docs (security ops, validation, glossary), expanded DB schema explicit columns, merged folder structure and overview, added prompt index/mapping, added candidate event.
+- 2026-01-26: Merged v4 missing docs (security ops, validation, glossary), expanded DB schema explicit columns, merged folder structure and overview.
 
-- 2026-01-26: Preserved v4 prompt files under docs/08_PROMPTS/ and added compatibility redirect stubs at original v4 paths.
+- 2026-01-26: Preserved v4 documentation files and added compatibility redirect stubs.
