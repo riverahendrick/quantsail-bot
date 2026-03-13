@@ -1,6 +1,4 @@
-import sys
 import unittest
-from pathlib import Path
 
 # Add services to path to allow importing from both api and engine
 # This assumes the test is run from project root or services/api
@@ -30,13 +28,9 @@ class TestConfigParity(unittest.TestCase):
         extra_in_api = api_fields - engine_fields
 
         self.assertFalse(
-            missing_in_api,
-            f"API config missing fields found in Engine: {missing_in_api}"
+            missing_in_api, f"API config missing fields found in Engine: {missing_in_api}"
         )
-        self.assertFalse(
-            extra_in_api,
-            f"API config has extra fields not in Engine: {extra_in_api}"
-        )
+        self.assertFalse(extra_in_api, f"API config has extra fields not in Engine: {extra_in_api}")
 
     def test_field_types_match(self):
         """Verify that field types are compatible (recursive check)."""
@@ -54,8 +48,16 @@ class TestConfigParity(unittest.TestCase):
         missing_in_api = engine_keys - api_keys
         extra_in_api = api_keys - engine_keys
 
-        self.assertFalse(missing_in_api, f"Missing fields in API model at {path}: {missing_in_api}")
-        self.assertFalse(extra_in_api, f"Extra fields in API model at {path}: {extra_in_api}")
+        self.assertFalse(
+            missing_in_api,
+            f"Missing fields in API model at {path}: "
+            f"{missing_in_api}",
+        )
+        self.assertFalse(
+            extra_in_api,
+            f"Extra fields in API model at {path}: "
+            f"{extra_in_api}",
+        )
 
         # Check field types
         for name, engine_field in engine_fields.items():
@@ -95,9 +97,12 @@ class TestConfigParity(unittest.TestCase):
                 if engine_type_name == api_type_name:
                     continue
 
-                # If they are different classes but standard types (int, float, str), direct comparison
-                # But here we might have formatting differences in str() representation
-                # Let's try to be lenient: if the base name matches, it's likely fine given the context
+                # If they are different classes but standard types
+                # (int, float, str), direct comparison
+                # But here we might have formatting differences
+                # in str() representation
+                # Let's try to be lenient: if the base name
+                # matches, it's likely fine given the context
 
                 # Clean up string representations for comparison
                 # e.g. "<class 'int'>" -> "int"
@@ -107,7 +112,9 @@ class TestConfigParity(unittest.TestCase):
                 self.assertEqual(
                     clean_type(engine_type_str),
                     clean_type(api_type_str),
-                    f"Type mismatch at {field_path}: Engine={engine_type} vs API={api_type}",
+                    f"Type mismatch at {field_path}: "
+                    f"Engine={engine_type} vs "
+                    f"API={api_type}",
                 )
 
 

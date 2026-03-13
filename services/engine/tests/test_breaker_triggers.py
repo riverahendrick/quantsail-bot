@@ -8,6 +8,8 @@ from quantsail_engine.breakers.triggers import (
     check_exchange_instability,
     check_spread_slippage_spike,
     check_volatility_spike,
+    clear_exchange_errors,
+    record_exchange_error,
 )
 from quantsail_engine.config.models import (
     ConsecutiveLossesBreakerConfig,
@@ -249,8 +251,63 @@ def test_consecutive_losses_zero_pnl() -> None:
     assert context is None
 
 
-def test_exchange_instability_stub() -> None:
-    """Test exchange instability always returns False (MVP stub)."""
+def test_exchange_instability_triggers_on_many_errors() -> None:
+    """Test exchange instability triggers when errors exceed threshold."""
+    clear_exchange_errors()
+    config = ExchangeInstabilityBreakerConfig(
+        enabled=True, max_disconnects_5m=3
+    )
+
+    # Record 3 errors (meets threshold)
+    for _ in range(3):
+        record_exchange_error()
+
+    should_trigger, context = check_exchange_instability(config)
+
+    assert should_trigger is True
+    assert context is not None
+    assert context["error_count_5m"] == 3
+    assert context["max_disconnects_5m"] == 3
+    clear_exchange_errors()
+
+
+def test_exchange_instability_no_trigger_below_threshold() -> None:
+    """Test exchange instability does not trigger below threshold."""
+    clear_exchange_errors()
+    config = ExchangeInstabilityBreakerConfig(
+        enabled=True, max_disconnects_5m=5
+    )
+
+    # Record 2 errors (below threshold of 5)
+    for _ in range(2):
+        record_exchange_error()
+
+    should_trigger, context = check_exchange_instability(config)
+
+    assert should_trigger is False
+    assert context is None
+    clear_exchange_errors()
+
+
+def test_exchange_instability_disabled() -> None:
+    """Test exchange instability disabled returns no trigger."""
+    clear_exchange_errors()
+    config = ExchangeInstabilityBreakerConfig(enabled=False)
+
+    # Even with many errors, should not trigger
+    for _ in range(10):
+        record_exchange_error()
+
+    should_trigger, context = check_exchange_instability(config)
+
+    assert should_trigger is False
+    assert context is None
+    clear_exchange_errors()
+
+
+def test_exchange_instability_no_errors() -> None:
+    """Test exchange instability with no recorded errors."""
+    clear_exchange_errors()
     config = ExchangeInstabilityBreakerConfig(enabled=True)
 
     should_trigger, context = check_exchange_instability(config)

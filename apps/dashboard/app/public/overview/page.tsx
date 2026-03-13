@@ -156,26 +156,26 @@ export default function PublicOverviewPage() {
                 </div>
                 <div>
                   <h3 className="text-lg font-semibold text-white">{gridPerf.strategy}</h3>
-                  <p className="text-xs text-zinc-500">Live grid trading performance</p>
+                  <p className="text-xs text-zinc-500">{t("liveGridTradingPerformance")}</p>
                 </div>
               </div>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div className="p-3 rounded-xl bg-white/5">
-                  <p className="text-xs text-zinc-500">Coins Traded</p>
+                  <p className="text-xs text-zinc-500">{t("coinsTraded")}</p>
                   <p className="text-lg font-semibold text-white">{gridPerf.coins_traded}</p>
                 </div>
                 <div className="p-3 rounded-xl bg-white/5">
-                  <p className="text-xs text-zinc-500">Total Fills</p>
+                  <p className="text-xs text-zinc-500">{t("totalFills")}</p>
                   <p className="text-lg font-semibold text-white">{gridPerf.total_fills}</p>
                 </div>
                 <div className="p-3 rounded-xl bg-white/5">
-                  <p className="text-xs text-zinc-500">Daily Return</p>
+                  <p className="text-xs text-zinc-500">{t("dailyReturn")}</p>
                   <p className={`text-lg font-semibold ${gridPerf.daily_return_pct >= 0 ? "text-green-400" : "text-red-400"}`}>
-                    {gridPerf.daily_return_pct >= 0 ? "+" : ""}{gridPerf.daily_return_pct}%
+                    {gridPerf.daily_return_pct >= 0 ? "+" : ""}{gridPerf.daily_return_pct}{"%"}
                   </p>
                 </div>
                 <div className="p-3 rounded-xl bg-white/5">
-                  <p className="text-xs text-zinc-500">Total P&L</p>
+                  <p className="text-xs text-zinc-500">{t("totalPnl")}</p>
                   <p className={`text-lg font-semibold ${gridPerf.total_pnl_usd >= 0 ? "text-green-400" : "text-red-400"}`}>
                     {formatCurrency(gridPerf.total_pnl_usd)}
                   </p>
@@ -183,7 +183,7 @@ export default function PublicOverviewPage() {
               </div>
               {gridPerf.last_updated && (
                 <p className="text-xs text-zinc-600 mt-3 text-right">
-                  Last updated: {new Date(gridPerf.last_updated).toLocaleTimeString()}
+                  {t("lastUpdated")}{": "}{new Date(gridPerf.last_updated).toLocaleTimeString()}
                 </p>
               )}
             </div>

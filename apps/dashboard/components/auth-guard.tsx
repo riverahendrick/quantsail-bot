@@ -7,12 +7,6 @@ import { DASHBOARD_CONFIG } from "@/lib/config";
 import { listUsers } from "@/lib/api";
 
 export function AuthGuard({ children }: { children: React.ReactNode }) {
-  // Demo mode: skip auth entirely so the dashboard is browsable without Firebase
-  if (DASHBOARD_CONFIG.DEMO_MODE) {
-    return <>{children}</>;
-  }
-
-
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [email, setEmail] = useState("");
@@ -152,6 +146,10 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
       }
     }
   };
+
+  if (DASHBOARD_CONFIG.DEMO_MODE) {
+    return <>{children}</>;
+  }
 
   if (loading) return <div className="flex h-screen items-center justify-center">{tAuth("loading")}</div>;
 

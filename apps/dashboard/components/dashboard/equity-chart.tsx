@@ -113,7 +113,7 @@ export function EquityChart() {
       <div className="p-6 border-b border-white/5">
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
           <div className="flex items-center gap-3">
-            <div className="p-2.5 rounded-xl bg-gradient-to-br from-cyan-500/20 to-blue-500/20 border border-cyan-500/20">
+            <div className="p-2.5 rounded-xl bg-linear-to-br from-cyan-500/20 to-blue-500/20 border border-cyan-500/20">
               <TrendingUp className="w-5 h-5 text-cyan-400" />
             </div>
             <div>
@@ -254,7 +254,7 @@ export function EquityChart() {
       </div>
 
       {/* Bottom Glow Line */}
-      <div className="h-1 bg-gradient-to-r from-transparent via-cyan-500/50 to-transparent" />
+      <div className="h-1 bg-linear-to-r from-transparent via-cyan-500/50 to-transparent" />
     </NeoCard>
   );
 }

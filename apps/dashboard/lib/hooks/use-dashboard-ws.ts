@@ -1,13 +1,28 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useCallback } from 'react';
 import { useDashboardStore } from '@/lib/store';
 import { auth } from '@/lib/firebase';
 import { DASHBOARD_CONFIG } from "@/lib/config";
 import { MOCK_BOT_STATE, MOCK_TRADES } from "@/lib/mock-data";
 
+const MAX_RECONNECT_DELAY_MS = 30_000;
+const BASE_RECONNECT_DELAY_MS = 1_000;
+
 export function useDashboardWs() {
   const { setBotState, addTrade, addEvent, setConnected, updateHeartbeat } = useDashboardStore();
   const wsRef = useRef<WebSocket | null>(null);
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const attemptRef = useRef(0);
+  const cursorRef = useRef<number | null>(null);
+
+  const getReconnectDelay = useCallback(() => {
+    const delay = Math.min(
+      BASE_RECONNECT_DELAY_MS * Math.pow(2, attemptRef.current),
+      MAX_RECONNECT_DELAY_MS
+    );
+    // Add jitter (±25%) to prevent thundering herd
+    const jitter = delay * 0.25 * (Math.random() * 2 - 1);
+    return Math.round(delay + jitter);
+  }, []);
 
   useEffect(() => {
     let isMounted = true;
@@ -35,32 +50,45 @@ export function useDashboardWs() {
           }
         }
 
-        const wsUrl = `${DASHBOARD_CONFIG.WS_URL}?token=${token}`;
+        // Build WS URL with auth token and cursor for resume
+        const params = new URLSearchParams({ token });
+        if (cursorRef.current !== null) {
+          params.set("cursor", String(cursorRef.current));
+        }
+        const wsUrl = `${DASHBOARD_CONFIG.WS_URL}?${params.toString()}`;
 
         const ws = new WebSocket(wsUrl);
         wsRef.current = ws;
 
         ws.onopen = () => {
-          if (isMounted) setConnected(true);
+          if (isMounted) {
+            setConnected(true);
+            attemptRef.current = 0; // Reset backoff on success
+          }
         };
 
         ws.onclose = () => {
           if (isMounted) {
             setConnected(false);
-            // Reconnect after 3s
-            reconnectTimeoutRef.current = setTimeout(connect, 3000);
+            attemptRef.current += 1;
+            const delay = getReconnectDelay();
+            reconnectTimeoutRef.current = setTimeout(connect, delay);
           }
         };
 
         ws.onerror = () => {
-          // Standard WS error event doesn't give much info, but we know it closed
-          // Browser console will show the connection refused error, which is unavoidable
-          // when the server is down.
+          // Browser console shows the connection error details.
+          // The close handler will trigger reconnect.
         };
 
         ws.onmessage = (event) => {
           try {
             const data = JSON.parse(event.data);
+
+            // Track cursor for resume on reconnect
+            if (typeof data.cursor === "number") {
+              cursorRef.current = data.cursor;
+            }
 
             if (data.type === "status") {
               updateHeartbeat();
@@ -99,5 +127,6 @@ export function useDashboardWs() {
       if (wsRef.current) wsRef.current.close();
       if (reconnectTimeoutRef.current) clearTimeout(reconnectTimeoutRef.current);
     };
-  }, [setBotState, addTrade, addEvent, setConnected, updateHeartbeat]);
+  }, [setBotState, addTrade, addEvent, setConnected, updateHeartbeat, getReconnectDelay]);
 }
+

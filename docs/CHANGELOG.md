@@ -1,6 +1,12 @@
 # Changelog — Quantsail
 
 ## Unreleased
+- 2026-03-12: **Full System Audit & Remediation (5 Phases)**:
+  - **Phase 1 — Engine Fixes**: Added `tick_interval_seconds` to `ExecutionConfig`, `time.sleep()` to trading loop, `get_open_trades()` to repository, control plane state checks each tick, fixed `reconcile_state` to load open trades from DB.
+  - **Phase 2 — API Fixes**: Created Redis-backed `ControlPlane` (`app/cache/control.py`), wired `stop_bot`/`pause_entries`/`resume_entries` to ControlPlane, removed all dev fallbacks from public + private endpoints (fake data → 503), synced `tick_interval_seconds` to API config.
+  - **Phase 3 — Dashboard WS Enhancement**: Enhanced `useDashboardWs` hook with cursor-based resume on reconnect and exponential backoff with jitter (1s→30s cap).
+  - **Phase 4 — Execution Hardening**: Added 3-attempt retry with exponential backoff + jitter to `execute_entry`. Added partial fill handling (zero-fill rejection, partial fill acceptance + logging).
+  - **Phase 5 — Infrastructure**: Created engine + API Dockerfiles (uv-based, health checks). Enhanced `docker-compose.yml` with health checks, API/engine/nginx/certbot services. Added `nginx.conf` (SSL, WS upgrade, rate limiting, security headers). Added GitHub Actions CI (3 parallel jobs). Added `backup.sh` (pg_dump + 7-day rotation).
 - 2026-02-07: **100% Test Coverage — Coverage Gaps Closed**: Created `test_coverage_gaps.py` with 26 tests covering previously untouched lines across 13 modules. Fixed 7 test failures (MetricsCalculator API mismatch, DynamicSizer max-cap math, BinanceAdapter ccxt-is-None guard, BacktestExecutor nested return shape, DataFetcher datetime filtering, CryptoPanic NewsArticle `kind` field). Modules covered: `metrics.py`, `dynamic_sizer.py`, `trailing_stop.py`, `vwap_reversion.py`, `binance_adapter.py`, `executor.py`, `main.py`, `sentry_service.py`, `data_fetcher.py`, `market_provider.py`, `cryptopanic.py`, `monte_carlo.py`, `runner.py`. Cleaned up temp test output files.
 - 2026-02-07: **Profitability Enhancement — Risk Management & Strategy Expansion**: Major upgrade to the trading engine's profitability and risk control capabilities.
   - **New Indicators**: Added VWAP (Volume Weighted Average Price), MACD (Moving Average Convergence Divergence), and OBV (On-Balance Volume) with full test coverage.

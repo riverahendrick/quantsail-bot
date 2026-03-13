@@ -1,18 +1,20 @@
 import { auth } from "./firebase";
 import { DASHBOARD_CONFIG } from "./config";
-import {
-    MOCK_BOT_CONFIG,
-    MOCK_EXCHANGE_KEYS,
-    MOCK_USERS,
-    MOCK_EVENTS,
-    MOCK_STRATEGY_PERFORMANCE,
-    MOCK_PORTFOLIO_RISK,
-    MOCK_KILL_SWITCH,
-    MOCK_GRID_PORTFOLIO,
-} from "./mock-data";
 
 // Mock data responses for development (only used when explicitly enabled)
-function getMockResponse<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
+async function getMockResponse<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
+    // Dynamic import: mock data is never bundled into production builds
+    const {
+        MOCK_BOT_CONFIG,
+        MOCK_EXCHANGE_KEYS,
+        MOCK_USERS,
+        MOCK_EVENTS,
+        MOCK_STRATEGY_PERFORMANCE,
+        MOCK_PORTFOLIO_RISK,
+        MOCK_KILL_SWITCH,
+        MOCK_GRID_PORTFOLIO,
+    } = await import("./mock-data");
+
     const method = (options.method || "GET").toUpperCase();
 
     // For write operations, return a mock success response
@@ -26,7 +28,7 @@ function getMockResponse<T>(endpoint: string, options: RequestInit = {}): Promis
             is_active: true,
             created_at: new Date().toISOString(),
         };
-        return Promise.resolve(writeResponse as T);
+        return writeResponse as T;
     }
 
     // Endpoint-to-mock-data map for GET requests
@@ -54,7 +56,7 @@ function getMockResponse<T>(endpoint: string, options: RequestInit = {}): Promis
         }
     }
 
-    return Promise.resolve((data || {}) as T);
+    return (data || {}) as T;
 }
 
 async function getHeaders() {

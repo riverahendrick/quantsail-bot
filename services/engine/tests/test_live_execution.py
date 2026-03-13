@@ -113,7 +113,7 @@ def test_execute_entry_idempotency_hit(executor, mock_repo, mock_adapter):
 
 
 def test_execute_entry_failure(executor, mock_repo, mock_adapter):
-    """Test handling of exchange errors."""
+    """Test handling of exchange errors with retry exhaustion."""
     plan = TradePlan(
         symbol="BTC/USDT",
         side="BUY",
@@ -128,18 +128,26 @@ def test_execute_entry_failure(executor, mock_repo, mock_adapter):
         timestamp=datetime.now(timezone.utc)
     )
 
-    # Mock failure
+    # Mock persistent failure
     mock_adapter.create_order.side_effect = Exception("API Error")
 
-    trade_id = executor.execute_entry(plan)
+    with patch("quantsail_engine.execution.live_executor.time.sleep"):
+        trade_id = executor.execute_entry(plan)
 
     assert trade_id is None
-    
-    # Verify error logged
-    mock_repo.append_event.assert_called_with(
+
+    # Verify all 3 retry attempts were made
+    assert mock_adapter.create_order.call_count == 3
+
+    # Verify final error event logged with retries_exhausted
+    mock_repo.append_event.assert_any_call(
         event_type="error.execution",
         level="ERROR",
-        payload={"error": "API Error", "trade_id": "uuid-123"},
+        payload={
+            "error": "API Error",
+            "trade_id": "uuid-123",
+            "retries_exhausted": 3,
+        },
         public_safe=False
     )
 

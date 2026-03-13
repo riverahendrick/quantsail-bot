@@ -20,7 +20,7 @@ def _get_firebase_app() -> firebase_admin.App:
 def verify_firebase_token(token: str) -> dict[str, object]:
     """Verify a Firebase ID token and return decoded claims."""
     app = _get_firebase_app()
-    decoded = auth.verify_id_token(token, app=app, check_revoked=False)
+    decoded = auth.verify_id_token(token, app=app, check_revoked=True)
     return cast(dict[str, object], decoded)
 
 

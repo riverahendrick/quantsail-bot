@@ -3,11 +3,12 @@
 Delegates to EntryPipeline and ExitPipeline for the heavy lifting.
 """
 
+import asyncio
 import logging
+import os
 import signal
-import uuid
+import time
 from typing import Any
-from datetime import datetime, timezone
 
 from sqlalchemy.orm import Session
 
@@ -20,15 +21,9 @@ from quantsail_engine.execution.executor import ExecutionEngine
 from quantsail_engine.gates.cooldown_gate import CooldownGate
 from quantsail_engine.gates.daily_lock import DailyLockManager
 from quantsail_engine.gates.daily_symbol_limit import DailySymbolLossLimit
-from quantsail_engine.gates.estimators import (
-    calculate_fee,
-    calculate_slippage,
-    calculate_spread_cost,
-)
 from quantsail_engine.gates.profitability import ProfitabilityGate
 from quantsail_engine.gates.regime_filter import RegimeFilter
 from quantsail_engine.gates.streak_sizer import StreakSizer
-from quantsail_engine.indicators.atr import calculate_atr
 from quantsail_engine.market_data.provider import MarketDataProvider
 from quantsail_engine.models.trade_plan import TradePlan
 from quantsail_engine.persistence.repository import EngineRepository
@@ -38,7 +33,7 @@ from quantsail_engine.signals.provider import SignalProvider
 
 # Control plane is optional so existing usage doesn't break
 try:
-    from quantsail_engine.cache.control import ControlPlane, BotState
+    from quantsail_engine.cache.control import BotState, ControlPlane  # noqa: F401
     _HAS_CONTROL_PLANE = True
 except ImportError:
     _HAS_CONTROL_PLANE = False
@@ -126,9 +121,73 @@ class TradingLoop:
         # Shutdown flag
         self._shutdown_requested = False
 
+        # CryptoPanic auto-polling (if API key configured)
+        cpanic_key = os.environ.get("CRYPTOPANIC_API_KEY", "")
+        if cpanic_key:
+            from quantsail_engine.market_data.cryptopanic import (
+                CryptoPanicConfig,
+                CryptoPanicProvider,
+            )
+            # Extract currency tickers from symbols (e.g., BTC/USDT → BTC)
+            currencies = [s.split("/")[0] for s in config.symbols.enabled]
+            cp_config = CryptoPanicConfig(
+                api_key=cpanic_key,
+                currencies=currencies,
+                cache_ttl_seconds=300,  # 5-minute cache
+            )
+            self._news_provider: Any = CryptoPanicProvider(cp_config)
+            self._news_currencies = currencies
+            logger.info("✅ CryptoPanic auto-polling enabled for %s", currencies)
+        else:
+            self._news_provider = None
+            self._news_currencies: list[str] = []
+
+    def _poll_news_sentiment(self) -> None:
+        """Poll CryptoPanic and activate news pause if sentiment is strongly bearish.
+
+        Runs synchronously using asyncio.run to keep the trading loop
+        threading model simple.  The CryptoPanicProvider already caches
+        results (5 min TTL), so redundant ticks are cheap.
+        """
+        if self._news_provider is None:
+            return
+
+        try:
+            sentiments = asyncio.run(
+                self._news_provider.get_multi_sentiment(self._news_currencies)
+            )
+            for currency, summary in sentiments.items():
+                if summary.is_bearish and summary.avg_sentiment < -0.3:
+                    logger.warning(
+                        "🔴 Strong negative news for %s (avg_sentiment=%.2f, "
+                        "%d articles). Activating news pause.",
+                        currency,
+                        summary.avg_sentiment,
+                        summary.article_count,
+                    )
+                    self.breaker_manager.trigger_breaker(
+                        breaker_type="news_sentiment",
+                        reason=f"Strongly bearish news for {currency} "
+                               f"(avg={summary.avg_sentiment:.2f})",
+                        pause_minutes=self.config.breakers.news.negative_pause_minutes,
+                        context={
+                            "currency": currency,
+                            "avg_sentiment": summary.avg_sentiment,
+                            "article_count": summary.article_count,
+                            "bullish": summary.bullish_count,
+                            "bearish": summary.bearish_count,
+                        },
+                    )
+                    return  # One trigger is enough
+        except Exception as e:
+            logger.warning("CryptoPanic poll failed (non-fatal): %s", e)
+
     def tick(self) -> None:
         """Execute one tick of the trading loop for all symbols."""
         logger.info("📊 Tick started")
+
+        # Auto-poll news sentiment
+        self._poll_news_sentiment()
 
         # Control plane gate
         if self.control_plane is not None:
@@ -136,7 +195,10 @@ class TradingLoop:
             state = self.control_plane.get_state()
             entries_allowed = self.control_plane.is_entries_allowed()
             exits_allowed = self.control_plane.is_exits_allowed()
-            logger.info("Control plane: state=%s, entries=%s, exits=%s", state, entries_allowed, exits_allowed)
+            logger.info(
+                "Control plane: state=%s, entries=%s, exits=%s",
+                state, entries_allowed, exits_allowed,
+            )
 
             if not exits_allowed:
                 # STOPPED state: no entries, no exit processing
@@ -307,16 +369,21 @@ class TradingLoop:
         Args:
             max_ticks: Maximum number of ticks to run (None = infinite)
         """
+        tick_interval = self.config.execution.tick_interval_seconds
+
         # Emit system.started event
         self.repo.append_event(
             event_type="system.started",
             level="INFO",
-            payload={"mode": self.config.execution.mode},
+            payload={"mode": self.config.execution.mode, "tick_interval": tick_interval},
             public_safe=True,
         )
-        
-        # Reconcile state
-        self.execution_engine.reconcile_state([])
+
+        # Reconcile state: load open trades from DB so the executor can
+        # verify protective orders on the exchange and re-place if missing.
+        open_trades = self.repo.get_open_trades()
+        self.execution_engine.reconcile_state(open_trades)
+        logger.info("Reconciled %d open trades on startup", len(open_trades))
 
         # Set up signal handlers for graceful shutdown
         signal.signal(signal.SIGINT, self._signal_handler)
@@ -324,11 +391,24 @@ class TradingLoop:
 
         tick_count = 0
         while not self._shutdown_requested:
+            # Check control plane state if available
+            if self.control_plane and _HAS_CONTROL_PLANE:
+                state = self.control_plane.get_state()
+                if state == BotState.STOPPED:
+                    logger.info("Control plane state is STOPPED — shutting down")
+                    break
+                self.control_plane.heartbeat()
+
             self.tick()
             tick_count += 1
 
             if max_ticks is not None and tick_count >= max_ticks:
                 break
+
+            # Sleep between ticks to prevent exchange API spam.
+            # Skipped when max_ticks is set (tests / backtest use max_ticks).
+            if max_ticks is None:
+                time.sleep(tick_interval)
 
         # Emit system.stopped event
         self.repo.append_event(

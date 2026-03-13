@@ -24,13 +24,14 @@ from app.auth.firebase import (
 )
 from app.auth.types import AuthUser, Role
 from app.cache.arming import get_arming_cache
+from app.cache.control import BotState, get_control_plane
 from app.cache.news import get_news_cache
 from app.db.engine import get_engine
 from app.db.models import BotConfigVersion, ExchangeKey, User
 from app.db.queries import list_equity_snapshots, list_events, list_trades
+from app.public.rate_limit import enforce_rate_limit
 from app.schemas.config import BotConfig
 from app.security.encryption import get_encryption_service
-from app.public.rate_limit import enforce_rate_limit
 
 router = APIRouter(
     prefix="/v1",
@@ -185,28 +186,26 @@ def start_bot(
 
 @router.post("/bot/stop")
 def stop_bot(_user: AuthUser = Depends(require_roles(*ALLOWED_ROLES))) -> dict[str, str]:
-    """Stop the trading bot."""
-    # In MVP, this would signal the engine via DB/Redis/Env
+    """Stop the trading bot via Redis ControlPlane."""
+    get_control_plane().set_state(BotState.STOPPED)
     return {"status": "stopped"}
 
 
 @router.post("/bot/pause_entries")
 def pause_entries(_user: AuthUser = Depends(require_roles(*ALLOWED_ROLES))) -> dict[str, str]:
-    """Pause new entries (exits remain active)."""
+    """Pause new entries (exits remain active) via Redis ControlPlane."""
+    get_control_plane().set_state(BotState.PAUSED_ENTRIES)
     return {"status": "entries_paused"}
 
 
 @router.post("/bot/resume_entries")
 def resume_entries(_user: AuthUser = Depends(require_roles(*ALLOWED_ROLES))) -> dict[str, str]:
-    """Resume new entries."""
+    """Resume new entries via Redis ControlPlane."""
+    get_control_plane().set_state(BotState.RUNNING)
     return {"status": "entries_resumed"}
 
 
 # --- User Management (Owner Only) ---
-
-# Simple in-memory user store for development when DB is not available
-DEV_USERS: list[dict[str, Any]] = []
-
 
 def _resolve_firebase_user(email: str) -> tuple[str | None, bool | None]:
     """Return (uid, disabled) for a Firebase user if present."""
@@ -238,19 +237,7 @@ def list_users(
                 )
             )
         return responses
-    except Exception as e:
-        # Fallback to development mode when database is not available
-        if "DATABASE_URL is required" in str(e):
-            # Return development users or empty list
-            return [
-                UserResponse(
-                    id="dev-1",
-                    email="hendrickriveravillegas@gmail.com",
-                    role=Role.OWNER,
-                    created_at=datetime.now(timezone.utc),
-                    disabled=False,
-                )
-            ]
+    except Exception:
         raise
 
 
@@ -298,29 +285,7 @@ def create_user(
             disabled=bool(record.disabled),
             password_reset_link=reset_link,
         )
-    except Exception as e:
-        # Fallback to development mode when database is not available
-        if "DATABASE_URL is required" in str(e):
-            # Create Firebase user only for development
-            record = get_firebase_user_by_email(email)
-            if not record:
-                temp_password = secrets.token_urlsafe(16)
-                record = create_firebase_user(email=email, password=temp_password)
-
-            set_firebase_custom_claims(record.uid, {"role": request.role.value})
-
-            reset_link = None
-            if request.send_reset_link:
-                reset_link = generate_password_reset_link(email)
-
-            return UserResponse(
-                id=f"dev-{uuid.uuid4()}",
-                email=email,
-                role=request.role,
-                created_at=datetime.now(timezone.utc),
-                disabled=bool(record.disabled),
-                password_reset_link=reset_link,
-            )
+    except Exception:
         raise
 
 

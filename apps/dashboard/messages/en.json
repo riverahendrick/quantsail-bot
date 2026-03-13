@@ -40,7 +40,12 @@
     "dailyLimitsEnabled": "Daily Limits Enabled",
     "ctaText": "Explore our live trading history and verify our performance on-chain.",
     "viewTrades": "View Trades",
-    "liveTrading": "Live Trading"
+    "liveTrading": "Live Trading",
+    "liveGridTradingPerformance": "Live grid trading performance",
+    "coinsTraded": "Coins Traded",
+    "totalFills": "Total Fills",
+    "dailyReturn": "Daily Return",
+    "totalPnl": "Total P&L"
   },
   "PublicTrades": {
     "title": "Public Trades Feed",
@@ -457,6 +462,8 @@
     "filled": "Filled",
     "rebalances": "Rebalances",
     "lastUpdate": "Last Update",
-    "refresh": "Refresh"
+    "refresh": "Refresh",
+    "buyShort": "B",
+    "sellShort": "S"
   }
 }

@@ -4,7 +4,7 @@ import os
 from datetime import datetime, timezone
 from typing import cast
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.encoders import jsonable_encoder
 
 from app.db.engine import get_engine
@@ -26,21 +26,11 @@ def summary() -> dict[str, object]:
     try:
         snapshot = latest_equity_snapshot(get_engine())
         return cast(dict[str, object], jsonable_encoder(sanitize_summary(snapshot)))
-    except Exception as e:
-        # Fallback to development mode when database is not available
-        if "DATABASE_URL is required" in str(e):
-            return {
-                "equity_usd": 10000.0,
-                "realized_pnl_today_usd": 150.50,
-                "unrealized_pnl_usd": 25.25,
-                "total_trades": 42,
-                "win_rate_30d": 0.65,
-                "profit_factor_30d": 1.8,
-                "max_drawdown_usd": -500.0,
-                "sharpe_ratio_30d": 1.2,
-                "timestamp": datetime.now(timezone.utc).isoformat(),
-            }
-        raise
+    except Exception:
+        raise HTTPException(
+            status_code=503,
+            detail={"code": "DB_UNAVAILABLE", "message": "Database is not available"},
+        )
 
 
 @router.get("/trades")
@@ -53,30 +43,11 @@ def trades(limit: int | None = Query(None, ge=1, le=500)) -> list[dict[str, obje
             list[dict[str, object]],
             jsonable_encoder([sanitize_trade(item) for item in data]),
         )
-    except Exception as e:
-        # Fallback to development mode when database is not available
-        if "DATABASE_URL is required" in str(e):
-            return [
-                {
-                    "id": "trade_1",
-                    "symbol": "BTC/USDT",
-                    "side": "buy",
-                    "quantity": 0.001,
-                    "price": 43500.0,
-                    "executed_at": datetime.now(timezone.utc).isoformat(),
-                    "realized_pnl_usd": 15.50,
-                },
-                {
-                    "id": "trade_2",
-                    "symbol": "BTC/USDT",
-                    "side": "sell",
-                    "quantity": 0.001,
-                    "price": 43750.0,
-                    "executed_at": datetime.now(timezone.utc).isoformat(),
-                    "realized_pnl_usd": 2.50,
-                },
-            ]
-        raise
+    except Exception:
+        raise HTTPException(
+            status_code=503,
+            detail={"code": "DB_UNAVAILABLE", "message": "Database is not available"},
+        )
 
 
 @router.get("/events")
@@ -89,26 +60,11 @@ def events(limit: int | None = Query(None, ge=1, le=500)) -> list[dict[str, obje
             list[dict[str, object]],
             jsonable_encoder([sanitize_event(item) for item in data]),
         )
-    except Exception as e:
-        # Fallback to development mode when database is not available
-        if "DATABASE_URL is required" in str(e):
-            return [
-                {
-                    "id": "event_1",
-                    "type": "trade_executed",
-                    "level": "info",
-                    "message": "BTC/USDT buy order executed",
-                    "timestamp": datetime.now(timezone.utc).isoformat(),
-                },
-                {
-                    "id": "event_2",
-                    "type": "strategy_update",
-                    "level": "info",
-                    "message": "Trend strategy parameters updated",
-                    "timestamp": datetime.now(timezone.utc).isoformat(),
-                },
-            ]
-        raise
+    except Exception:
+        raise HTTPException(
+            status_code=503,
+            detail={"code": "DB_UNAVAILABLE", "message": "Database is not available"},
+        )
 
 
 @router.get("/heartbeat")

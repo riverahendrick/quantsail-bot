@@ -128,6 +128,19 @@ class EngineRepository:
             "pnl_pct": 0.0, # Placeholder
         }
 
+    def get_open_trades(self) -> list[Any]:
+        """Get all open trades from the database.
+
+        Returns:
+            List of Trade ORM objects with status = 'OPEN'.
+            Used by reconcile_state() on engine startup.
+        """
+        return (
+            self.session.query(Trade)
+            .filter(Trade.status == "OPEN")
+            .all()
+        )
+
     def save_order(self, order_data: dict[str, Any]) -> str:
         """Save order to database."""
         order = Order(

@@ -6,10 +6,13 @@ than in-process price checks.
 """
 
 import logging
+import random
+import time
 import uuid
 from datetime import datetime, timezone
 from typing import Any
 
+from quantsail_engine.breakers.triggers import record_exchange_error
 from quantsail_engine.execution.adapter import ExchangeAdapter
 from quantsail_engine.execution.executor import ExecutionEngine
 from quantsail_engine.models.trade_plan import TradePlan
@@ -57,26 +60,77 @@ class LiveExecutor(ExecutionEngine):
             )
             return {"trade": existing, "orders": []}
 
-        # 2. Market entry
-        try:
-            response = self.adapter.create_order(
-                symbol=plan.symbol,
-                side=plan.side,
-                order_type="market",
-                quantity=plan.quantity,
-                client_order_id=client_order_id,
-            )
-        except Exception as e:
+        # 2. Market entry with retry + exponential backoff
+        max_retries = 3
+        response: dict[str, Any] | None = None
+        last_error: Exception | None = None
+
+        for attempt in range(max_retries):
+            try:
+                response = self.adapter.create_order(
+                    symbol=plan.symbol,
+                    side=plan.side,
+                    order_type="market",
+                    quantity=plan.quantity,
+                    client_order_id=client_order_id,
+                )
+                break  # Success
+            except Exception as e:
+                last_error = e
+                record_exchange_error()
+                if attempt < max_retries - 1:
+                    delay = (2 ** attempt) + random.uniform(0, 1)
+                    self.repo.append_event(
+                        event_type="execution.retry",
+                        level="WARN",
+                        payload={
+                            "trade_id": plan.trade_id,
+                            "attempt": attempt + 1,
+                            "delay_s": round(delay, 2),
+                            "error": str(e),
+                        },
+                        public_safe=False,
+                    )
+                    time.sleep(delay)
+
+        if response is None:
             self.repo.append_event(
                 event_type="error.execution",
                 level="ERROR",
-                payload={"error": str(e), "trade_id": plan.trade_id},
+                payload={
+                    "error": str(last_error),
+                    "trade_id": plan.trade_id,
+                    "retries_exhausted": max_retries,
+                },
                 public_safe=False,
             )
             return None
 
         fill_price = self._extract_fill_price(response, plan.entry_price)
-        filled_qty = float(response.get("amount", plan.quantity))
+        filled_qty = float(response.get("filled", response.get("amount", plan.quantity)))
+
+        # Handle partial fills: if nothing filled at all, treat as failure
+        if filled_qty <= 0:
+            self.repo.append_event(
+                event_type="error.zero_fill",
+                level="ERROR",
+                payload={"trade_id": plan.trade_id, "response": str(response)},
+                public_safe=False,
+            )
+            return None
+
+        # Log partial fill if qty < requested
+        if filled_qty < plan.quantity:
+            self.repo.append_event(
+                event_type="execution.partial_fill",
+                level="WARN",
+                payload={
+                    "trade_id": plan.trade_id,
+                    "requested_qty": plan.quantity,
+                    "filled_qty": filled_qty,
+                },
+                public_safe=False,
+            )
         now = datetime.now(timezone.utc)
 
         trade_data = {

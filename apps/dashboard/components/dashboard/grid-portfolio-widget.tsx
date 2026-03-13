@@ -160,8 +160,8 @@ export function GridPortfolioWidget() {
 
                             <div className="flex items-center justify-between mt-3 text-xs text-zinc-500">
                                 <div className="flex items-center gap-3">
-                                    <span><ArrowUpDown className="h-3 w-3 inline mr-1" />{coin.total_buys}B / {coin.total_sells}S</span>
-                                    <span>{t("filled")}: {coin.filled_levels}/{coin.total_levels}</span>
+                                    <span><ArrowUpDown className="h-3 w-3 inline mr-1" />{coin.total_buys}{t("buyShort")} {"/"} {coin.total_sells}{t("sellShort")}</span>
+                                    <span>{t("filled")}{": "}{coin.filled_levels}{"/"}{coin.total_levels}</span>
                                 </div>
                                 {coin.last_updated && (
                                     <span>{new Date(coin.last_updated).toLocaleTimeString()}</span>

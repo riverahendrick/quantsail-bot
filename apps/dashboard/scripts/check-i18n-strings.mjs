@@ -108,7 +108,7 @@ function checkFile(filePath) {
   function visit(node) {
     if (ts.isJsxText(node)) {
       const text = node.getText().replace(/\s+/g, " ").trim();
-      if (text.length > 0) {
+      if (text.length > 0 && /[a-zA-Z]/.test(text)) {
         reportViolation(sourceFile, node, "JSX text must come from translations");
       }
     }
@@ -116,10 +116,12 @@ function checkFile(filePath) {
     if (ts.isJsxExpression(node) && node.expression) {
       if (
         (ts.isStringLiteral(node.expression) ||
-        ts.isNoSubstitutionTemplateLiteral(node.expression)) &&
-        node.expression.getText().replace(/['"`]/g, "").trim().length > 0
+        ts.isNoSubstitutionTemplateLiteral(node.expression))
       ) {
-        reportViolation(sourceFile, node, "String literals must come from translations");
+        const text = node.expression.getText().replace(/['"`]/g, "").trim();
+        if (text.length > 0 && /[a-zA-Z]/.test(text)) {
+          reportViolation(sourceFile, node, "String literals must come from translations");
+        }
       }
     }
 

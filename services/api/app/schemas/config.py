@@ -21,6 +21,14 @@ class ExecutionConfig(BaseModel):
         ge=0.0,
         description="Minimum expected profit in USD to accept a trade",
     )
+    tick_interval_seconds: int = Field(
+        default=60,
+        ge=1,
+        le=3600,
+        description=(
+            "Seconds between trading loop ticks. Prevents exchange API spam. Recommended: 60"
+        ),
+    )
     taker_fee_bps: float = Field(
         default=10.0,  # 0.1%
         ge=0.0,
@@ -305,31 +313,44 @@ class PerCoinStrategyOverride(BaseModel):
     """
 
     weight_trend: float | None = Field(
-        default=None, ge=0.0, le=1.0,
+        default=None,
+        ge=0.0,
+        le=1.0,
         description="Override trend weight for this symbol (None = use global)",
     )
     weight_mean_reversion: float | None = Field(
-        default=None, ge=0.0, le=1.0,
+        default=None,
+        ge=0.0,
+        le=1.0,
         description="Override mean reversion weight for this symbol (None = use global)",
     )
     weight_breakout: float | None = Field(
-        default=None, ge=0.0, le=1.0,
+        default=None,
+        ge=0.0,
+        le=1.0,
         description="Override breakout weight for this symbol (None = use global)",
     )
     weight_vwap: float | None = Field(
-        default=None, ge=0.0, le=1.0,
+        default=None,
+        ge=0.0,
+        le=1.0,
         description="Override VWAP weight for this symbol (None = use global)",
     )
     min_agreement: int | None = Field(
-        default=None, ge=1,
+        default=None,
+        ge=1,
         description="Override min_agreement for this symbol (None = use global)",
     )
     confidence_threshold: float | None = Field(
-        default=None, ge=0.0, le=1.0,
+        default=None,
+        ge=0.0,
+        le=1.0,
         description="Override confidence_threshold for this symbol (None = use global)",
     )
     weighted_threshold: float | None = Field(
-        default=None, ge=0.0, le=1.0,
+        default=None,
+        ge=0.0,
+        le=1.0,
         description="Override weighted_threshold for this symbol (None = use global)",
     )
 
@@ -346,8 +367,6 @@ class EnsembleConfig(BaseModel):
             "Ensemble mode: agreement (min N agree), weighted (weighted score). Recommended: weighted"
         ),
     )
-
-
 
     min_agreement: int = Field(
         default=2,
@@ -642,19 +661,26 @@ class GridSymbolConfig(BaseModel):
 
     enabled: bool = Field(default=True, description="Enable grid trading for this symbol")
     lower_pct: float = Field(
-        default=5.0, gt=0.0, le=50.0,
+        default=5.0,
+        gt=0.0,
+        le=50.0,
         description="Grid lower bound as pct below reference price. E.g. 5.0 = -5%",
     )
     upper_pct: float = Field(
-        default=5.0, gt=0.0, le=50.0,
+        default=5.0,
+        gt=0.0,
+        le=50.0,
         description="Grid upper bound as pct above reference price. E.g. 5.0 = +5%",
     )
     num_grids: int = Field(
-        default=15, ge=3, le=500,
+        default=15,
+        ge=3,
+        le=500,
         description="Number of grid levels. More grids = more trades, smaller profit each",
     )
     allocation_usd: float = Field(
-        default=1000.0, gt=0.0,
+        default=1000.0,
+        gt=0.0,
         description="Capital allocated to this symbol's grid",
     )
     rebalance_on_breakout: bool = Field(
@@ -668,7 +694,9 @@ class GridConfig(BaseModel):
 
     enabled: bool = Field(default=False, description="Enable grid trading layer")
     fee_pct: float = Field(
-        default=0.1, ge=0.0, le=5.0,
+        default=0.1,
+        ge=0.0,
+        le=5.0,
         description="Trading fee per side in percent (e.g. 0.1 = 0.1%)",
     )
     symbols: dict[str, GridSymbolConfig] = Field(

@@ -17,6 +17,12 @@ class ExecutionConfig(BaseModel):
         ge=0.0,
         description="Minimum expected profit in USD to accept a trade",
     )
+    tick_interval_seconds: int = Field(
+        default=60,
+        ge=1,
+        le=3600,
+        description="Seconds between trading loop ticks. Prevents exchange API spam. Recommended: 60",
+    )
     taker_fee_bps: float = Field(
         default=10.0,  # 0.1%
         ge=0.0,

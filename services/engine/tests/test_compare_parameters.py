@@ -153,13 +153,17 @@ class TestCompareProfiles:
             output_dir=output_dir,
         )
 
-        # Should have default + 3 profiles = 4 results
-        assert len(report["results"]) == 4
+        # Should have default + 7 profiles = 8 results
+        assert len(report["results"]) == 8
         labels = [r["label"] for r in report["results"]]
         assert "default" in labels
         assert "conservative" in labels
         assert "moderate" in labels
         assert "aggressive" in labels
+        assert "aggressive_1h" in labels
+        assert "daily_target" in labels
+        assert "aggressive_5m" in labels
+        assert "production_routing" in labels
 
         # Verify JSON file was written
         report_file = output_dir / "parameter_comparison.json"
@@ -167,7 +171,7 @@ class TestCompareProfiles:
 
         saved = json.loads(report_file.read_text())
         assert saved["starting_cash"] == 10000.0
-        assert len(saved["results"]) == 4
+        assert len(saved["results"]) == 8
 
     @patch("scripts.compare_parameters.BacktestRunner")
     def test_report_contains_metadata(

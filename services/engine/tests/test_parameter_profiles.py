@@ -19,10 +19,14 @@ class TestListProfiles:
 
     def test_returns_three_profiles(self) -> None:
         profiles = list_profiles()
-        assert len(profiles) == 3
+        assert len(profiles) == 7
         assert "conservative" in profiles
         assert "moderate" in profiles
         assert "aggressive" in profiles
+        assert "aggressive_1h" in profiles
+        assert "daily_target" in profiles
+        assert "aggressive_5m" in profiles
+        assert "production_routing" in profiles
 
     def test_matches_constant(self) -> None:
         assert list_profiles() == AVAILABLE_PROFILES
